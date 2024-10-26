@@ -39,15 +39,15 @@ def visualize_bags(
     fig.text(0.5, 0.91, f"positive label: {positive_num}", ha='center', fontsize=12, color='gray')
 
     for i in range(num_images):
-        ax = axes.flatten()[i] 
+        ax = axes[i]
         ax.imshow(bags[0][i].squeeze(), cmap='gray')
 
-        label_value = labels[1][0][i].numpy().item()
+        label_value = labels[1][0][i]
         title_color = 'green' if label_value else 'red'
 
         ax.set_title(f'Label: {label_value}', color=title_color)
         ax.axis('off')
-    
+
     for j in range(num_images, num_rows * num_columns):
         axes[j].axis('off')
 
@@ -55,6 +55,9 @@ def visualize_bags(
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     if show:
         plt.show()
-    plot_path = os.path.join("./logs/misc/data", f"bag_{idx}_{bag_status}.png")
-    plt.savefig(plot_path)
-
+    else:
+        plot_path = os.path.join("./logs/misc/data", f"bag_{idx}_{bag_status}.png")
+        try:
+            plt.savefig(plot_path)
+        except Exception as e:
+            print(f"Error saving plot: {e}")
