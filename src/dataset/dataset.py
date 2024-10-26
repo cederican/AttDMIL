@@ -67,14 +67,19 @@ class MnistBags(data_utils.Dataset):
                 - bags_list (list of Tensors): Each bag is a list of images.
                 - labels_list (list of bools): Each bag label is True if it contains the target digit.
         """
-        loader = data_utils.DataLoader(datasets.MNIST('data',
-                                                      train=self.train,
-                                                      download=True,
-                                                      transform=transforms.Compose([
-                                                          transforms.ToTensor(),
-                                                          transforms.Normalize((0.1307,), (0.3081,))])),
-                                       batch_size=self.num_train_samples if self.train else self.num_test_samples,
-                                       shuffle=False)
+        try:
+            loader = data_utils.DataLoader(
+                datasets.MNIST('data', train=self.train, download=True, transform=transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.1307,), (0.3081,))
+                ])),
+                batch_size=self.num_train_samples if self.train else self.num_test_samples,
+                shuffle=False
+            )
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            return [], []
+
         # Extract data from loader
         for (batch_data, batch_labels) in loader:
             all_imgs = batch_data
