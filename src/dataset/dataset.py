@@ -6,7 +6,7 @@ from torchvision import datasets, transforms
 from src.modules.config import MNISTBagsConfig
 from src.modules.plotting import visualize_bags
 
-class MnistBags(data_utils.Dataset):
+class MNISTBags(data_utils.Dataset):
     """
     A PyTorch Dataset for generating and loading MNIST images as bags for use in multiple-instance learning (MIL) settings.
 
@@ -183,10 +183,10 @@ if __name__ == "__main__":
         num_bags=5,
         train=False
     )
-    train_loader = data_utils.DataLoader(MnistBags(**train_config.__dict__),
+    train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),
                                          batch_size=1,
                                          shuffle=True)
-    test_loader = data_utils.DataLoader(MnistBags(**test_config.__dict__),
+    test_loader = data_utils.DataLoader(MNISTBags(**test_config.__dict__),
                                         batch_size=1,
                                         shuffle=False)
     

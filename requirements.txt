@@ -7,3 +7,5 @@ matplotlib
 pandas
 wandb
 debugpy
+tqdm
+torchinfo
