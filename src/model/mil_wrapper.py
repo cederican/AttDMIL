@@ -44,7 +44,17 @@ class AttDMILWrapper(ModelWrapper):
             eta_min=self.config.eta_min
         )
         return [optimizer], [lr_scheduler]
-    
+
+    def shared_step(
+            self,
+            model: MILModel,
+            batch: tuple,
+    ):
+        bag, label = batch
+        output = model(bag)
+        loss = model.loss(output, label)
+        return {"loss": loss}
+
     def training_step(
             self,
             model: MILModel,
@@ -52,49 +62,29 @@ class AttDMILWrapper(ModelWrapper):
             optimizer: list[th.optim.Optimizer],
             lr_scheduler: list[th.optim.lr_scheduler._LRScheduler],
             global_step: int,
-    ):  
-        # adjust for special case with basgs
-        bag, label = batch
-        output = model(bag)
-        loss = model.loss(output, label)
-
+    ):
+        result = self.shared_step(model, batch)
         optimizer.zero_grad()
-        loss.backward()
+        result["loss"].backward()
         optimizer.step()
         lr_scheduler.step()
+        return result
 
-        return {"loss": loss} ############## check if this is correct
-    
     def validation_step(
             self,
             model: MILModel,
             batch: tuple,
             global_step: int,
     ):
-        bag, label = batch
-        output = model(bag)
-        loss = model.loss(output, label)
-        return {"loss": loss}
-    
+        return self.shared_step(model, batch)
+
     def predict_step(
             self,
             model: MILModel,
             batch: tuple,
             global_step: int,
     ):
-        bag, label = batch
-        output = model(bag)
-        loss = model.loss(output, label)
-        return {"loss": loss}
-        
-
-        
-
-        
-
-
-
-
+        return self.shared_step(model, batch)
 
     def load_model_checkpoint(self, ckpt_path):
         try:
