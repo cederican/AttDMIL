@@ -1,10 +1,11 @@
 import wandb
+import time
 import torch as th
 from src.modules.config import MILModelConfig, MNISTBagsConfig, MILPoolingConfig
 from src.dataset.dataset import MNISTBags
 from src.model.mil_wrapper import AttDMILWrapper
 from src.model.mil import MILModel
-from src.modules.logger import prepare_folder, get_run_name, save_config, bcolors, WandbLogger
+from src.modules.logger import prepare_folder, get_run_name, bcolors, WandbLogger
 from src.modules.trainer import Trainer
 import torch.utils.data as data_utils
 from torchinfo import summary
@@ -118,19 +119,19 @@ def main_sweep():
             },
         'parameters': {
             'mean_bag_size': {
-                'value': 10             # [10, 50, 100]
+                'value': 10             # [10, 50, 100] fixed
             },
             'var_bag_size': {
-                'value': 10             # [2, 10, 20]    
+                'value': 2             # [2, 10, 20] fixed   
             },
             'num_bags': {
-                'value': 50             # [50, 100, 150, 200, 300, 400, 500]
+                'values': [100, 150]     # [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
-                'value': ['embedding', 'instance']     # ['embedding', 'instance']
+                'value': 'instance'     # ['embedding', 'instance']
             },
             'pooling_type': {
-                'values': ['max', 'mean', 'attention', 'gated_attention']         # ['max', 'mean', 'attention', 'gated_attention']
+                'values': ['max', 'mean']       # ['max', 'mean', 'attention', 'gated_attention']
             },
         }
     }
@@ -138,9 +139,12 @@ def main_sweep():
    
 if __name__ == "__main__":
 
-    for _ in range(5):
+    for i in range(5):
         project_name = 'AttDMIL-PML'
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-        wandb.agent(sweep_id, function=train, count=8)
+        wandb.agent(sweep_id, function=train, count=16)
+        print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
+        time.sleep(4)
+    print("All sweeps completed successfully!")

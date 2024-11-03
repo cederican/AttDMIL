@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import wandb
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 def visualize_gtbags(
@@ -65,6 +67,8 @@ def visualize_gtbags(
             wandb.log({"sample bag visualization": image})
         except Exception as e:
             print(f"Error saving plot: {e}")
+        finally:
+            plt.close(fig) 
 
 def visualize_attMechanism(
         model, 
@@ -112,10 +116,12 @@ def visualize_attMechanism(
         if show:
             plt.show()
         else:
-            plot_path = os.path.join(misc_save_path, f"att_bag_{global_step}_{bag_status}.png")
+            plot_path = os.path.join(misc_save_path, f"att_bag_{bag_status}.png")
             try:
                 plt.savefig(plot_path)
                 image = wandb.Image(plot_path, caption="attention mechanism visualization")
                 wandb.log({"attention mechanism visualization": image})
             except Exception as e:
                 print(f"Error saving plot: {e}")
+            finally:
+                plt.close(fig) 

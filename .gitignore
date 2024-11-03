@@ -8,3 +8,5 @@ MNIST
 *.json
 *.pt
 *.png
+*.yaml
+wandb

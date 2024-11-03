@@ -112,7 +112,7 @@ class AttDMILWrapper(ModelWrapper):
     ):
         y_bag_true = label[0].float()
         y_bag_pred, y_instance_pred = model(bag)
-        y_bag_pred = th.clamp(y_bag_pred, min=1e-3, max=1. - 1e-3)
+        y_bag_pred = th.clamp(y_bag_pred, min=1e-4, max=1. - 1e-4)
         loss = th.nn.BCELoss()(y_bag_pred, y_bag_true)
         return loss
 

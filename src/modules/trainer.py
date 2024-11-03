@@ -1,5 +1,6 @@
 import os
 import torch as th
+import random
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from src.model.mil_wrapper import AttDMILWrapper
@@ -88,6 +89,10 @@ class Trainer:
                     best_auc = current_val_auc
                     best_value = combined_stop_metric
                     no_improvement_count = 0
+
+                    # Visualize
+                    self.visualize(val_loader, global_step)
+                    global_step += 1
                     
                     if self.ckpt_save_path is not None:
                         self._save_model(f"best_ep={epoch}_val_loss={best_value:.4f}")
@@ -100,8 +105,6 @@ class Trainer:
                     print(f"Early stopping at epoch {epoch} due to no improvement in validation loss for {patience} epochs.")
                     break
                 self.wrapper.val_metrics.reset()
-        # Visualize
-        self.visualize(val_loader, global_step)
 
         if self.ckpt_save_path is not None:
             self._save_model("last")
@@ -199,12 +202,12 @@ class Trainer:
                 leave=False,
             )
             loader.set_description(f"Visualization")
+            random_visualize_idx = random.randint(0, 9)
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
 
-                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step)
-
-                if batch_idx >= 1:
+                if batch_idx == random_visualize_idx:
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step)
                     break
             
