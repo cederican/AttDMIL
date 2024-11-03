@@ -3,3 +3,8 @@ pml.sif
 .vscode
 __pycache__
 MNIST
+*.wandb
+*.log
+*.json
+*.pt
+*.png

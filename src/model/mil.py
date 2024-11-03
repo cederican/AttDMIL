@@ -48,7 +48,7 @@ class MILPooling(nn.Module):
             return y_bag_pred, None                     # return (1, 1), None
         
         elif self.pooling_type == 'attention':
-            A = self.attention(x)                       # (num_instances, feature_dim) -> (num_instances, ATTENTION_BRANCHES)
+            A = self.attention(x).squeeze(1)                       # (num_instances, feature_dim) -> (num_instances, ATTENTION_BRANCHES)
             A = torch.softmax(A, dim=0)                 # (num_instances, ATTENTION_BRANCHES) -> (num_instances, ATTENTION_BRANCHES)
             x = A.T @ x                                 # (ATTENTION_BRANCHES, num_instances) @ (num_instances, feature_dim) -> (ATTENTION_BRANCHES, feature_dim)
             return x, A                                 # return (ATTENTION_BRANCHES, feature_dim), (num_instances, ATTENTION_BRANCHES)
@@ -56,7 +56,7 @@ class MILPooling(nn.Module):
         elif self.pooling_type == 'gated_attention':
             V = self.attention_V(x)                     # (num_instances, feature_dim) -> (num_instances, attspace_dim)
             U = self.attention_U(x)                     # (num_instances, feature_dim) -> (num_instances, attspace_dim)   
-            A = self.attention_w(V * U)                 # (num_instances, attspace_dim) -> (num_instances, ATTENTION_BRANCHES)
+            A = self.attention_w(V * U).squeeze(1)                 # (num_instances, attspace_dim) -> (num_instances, ATTENTION_BRANCHES)
             A = torch.softmax(A, dim=0)                 # (num_instances, ATTENTION_BRANCHES) -> (num_instances, ATTENTION_BRANCHES)
             x = A.T @ x                                 # (ATTENTION_BRANCHES, num_instances) @ (num_instances, feature_dim) -> (ATTENTION_BRANCHES, feature_dim)
             return x, A                                 # return (ATTENTION_BRANCHES, feature_dim), (num_instances, ATTENTION_BRANCHES)
@@ -117,7 +117,7 @@ class MILModel(nn.Module):
         instance_features = self.feature_extractor(x)                               # (num_instances, c, h, w) -> (num_instances, feature_dim)
         if self.mode == 'instance':
             y_instance_pred = self.sigmoid(self.classifier(instance_features))      # (num_instances, feature_dim) -> (num_instances, 1)
-            y_bag_pred, _ = self.pooling(y_instance_pred)                           # (num_instances, 1) -> (1, 1)
+            y_bag_pred, _ = self.pooling(y_instance_pred)                           # (num_instances, 1) -> (1,)
             return y_bag_pred, y_instance_pred                                      
          
         elif self.mode == 'embedding':
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # )
     # data_loader = data_utils.DataLoader(
     #     MNISTBags(**train_config.dataset_config.__dict__),
-    #     batch_size=1,
+    #     batch_size=train_config.batch_size,
     #     shuffle=True
     # )
     # model = MILModel(mil_model_config=train_config)
@@ -195,7 +195,7 @@ if __name__ == "__main__":
             )
             data_loader = data_utils.DataLoader(
                 MNISTBags(**train_config.dataset_config.__dict__),
-                batch_size=1,
+                batch_size=train_config.batch_size,
                 shuffle=True
             )
             model = MILModel(mil_model_config=train_config)

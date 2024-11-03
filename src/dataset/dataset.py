@@ -4,7 +4,7 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 from src.modules.config import MNISTBagsConfig
-from src.modules.plotting import visualize_bags
+from src.modules.plotting import visualize_gtbags
 
 class MNISTBags(data_utils.Dataset):
     """
@@ -50,8 +50,8 @@ class MNISTBags(data_utils.Dataset):
         self.var_bag_size = var_bag_size
         self.num_bags = num_bags
         self.train = train
-        self.num_train_samples = 600
-        self.num_test_samples = 100
+        self.num_train_samples = 60000
+        self.num_test_samples = 10000
 
         if self.train:
             self.train_bags_list, self.train_labels_list = self._create_bags()
@@ -168,7 +168,7 @@ def test_visualization(
 ):
     for batch_idx, (bag, label) in enumerate(train_loader):
         print(f'Train Batch {batch_idx + 1} - Bag size: {bag.shape} - Bag Label: {label[0].numpy()}')
-        visualize_bags(bag, label, batch_idx, positive_num, show)
+        visualize_gtbags(bag, label, batch_idx, positive_num, show)
     
 
 if __name__ == "__main__":
