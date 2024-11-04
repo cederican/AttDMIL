@@ -79,23 +79,48 @@ class MNISTBags(data_utils.Dataset):
         except Exception as e:
             print(f"Error loading data: {e}")
             return [], []
+        
+        counter = 0
+        last_bag = 0
+        bags_list = []
+        labels_list = []
 
-        # Extract data from loader
-        for (batch_data, batch_labels) in loader:
+        for batch_data, batch_labels in loader:
             all_imgs = batch_data
             all_labels = batch_labels
 
-        bags_list = []
-        labels_list = []
         num_samples = self.num_train_samples if self.train else self.num_test_samples
-        for _ in range(self.num_bags):
+
+        while counter < self.num_bags:
             bag_length = max(1, int(self.random.normal(self.mean_bag_size, self.var_bag_size, 1)[0]))
-            indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
-            labels_in_bag = all_labels[indices] == self.positive_num
-            bags_list.append(all_imgs[indices])
-            labels_list.append(labels_in_bag)
+
+            if last_bag == 0:
+                # Positive bag (contains `self.positive_num`)
+                indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
+                labels_in_bag = all_labels[indices]
+
+                if self.positive_num in labels_in_bag:
+                    labels_list.append(labels_in_bag == self.positive_num)
+                    bags_list.append(all_imgs[indices])
+                    last_bag = 1
+                    counter += 1
+            else:
+                # Negative bag (excludes `self.positive_num`)
+                indices = []
+                while len(indices) < bag_length:
+                    idx = self.random.integers(0, num_samples)
+                    if all_labels[idx] != self.positive_num:
+                        indices.append(idx)
+
+                indices = torch.LongTensor(indices)
+                labels_in_bag = all_labels[indices]
+                labels_list.append(labels_in_bag == self.positive_num)
+                bags_list.append(all_imgs[indices])
+                last_bag = 0
+                counter += 1
 
         return bags_list, labels_list
+
 
     def __len__(self):
         """
@@ -164,11 +189,11 @@ def test_visualization(
     train_loader: data_utils.DataLoader,
     test_loader: data_utils.DataLoader,
     positive_num: int,
-    show: bool = False
+    show: bool = True
 ):
     for batch_idx, (bag, label) in enumerate(train_loader):
         print(f'Train Batch {batch_idx + 1} - Bag size: {bag.shape} - Bag Label: {label[0].numpy()}')
-        visualize_gtbags(bag, label, batch_idx, positive_num, show)
+        visualize_gtbags(bag, label, batch_idx, positive_num, show, "dummy_path")
     
 
 if __name__ == "__main__":
@@ -177,7 +202,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=5,
+        num_bags=50,
         train=True
     )
     test_config = MNISTBagsConfig(
@@ -185,7 +210,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=5,
+        num_bags=50,
         train=False
     )
     train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),

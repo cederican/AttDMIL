@@ -11,14 +11,14 @@ import torch.utils.data as data_utils
 from torchinfo import summary
 
 def train(config=None):
-    base_log_dir = f'/home/pml06/dev/attdmil/logs/mu{config.mean_bag_size}'
+    base_log_dir = f'/home/pml06/dev/attdmil/logs'
 
     with wandb.init(
             dir=base_log_dir,
             config=config,
         ):
         config = wandb.config
-
+        base_log_dir = base_log_dir + f"/mu{config.mean_bag_size}"
         run_name = get_run_name(base_log_dir, f"{config.mode}_pool{config.pooling_type}_mu{config.mean_bag_size}_var{config.var_bag_size}_num{config.num_bags}")
         wandb.run.name = run_name  
         wandb.run.save()
