@@ -125,13 +125,13 @@ def main_sweep():
                 'value': 2             # [2, 10, 20] fixed   
             },
             'num_bags': {
-                'values': [100, 150]     # [50, 100, 150, 200, 300, 400, 500]
+                'values': [200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
-                'value': 'instance'     # ['embedding', 'instance']
+                'values': ['embedding', 'instance']     # ['embedding', 'instance']
             },
             'pooling_type': {
-                'values': ['max', 'mean']       # ['max', 'mean', 'attention', 'gated_attention']
+                'values': ['max', 'mean', 'attention', 'gated_attention']       # ['max', 'mean', 'attention', 'gated_attention']
             },
         }
     }
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-        wandb.agent(sweep_id, function=train, count=16)
+        wandb.agent(sweep_id, function=train, count=32)
         print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
         time.sleep(4)
     print("All sweeps completed successfully!")
