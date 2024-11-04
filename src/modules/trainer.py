@@ -202,7 +202,7 @@ class Trainer:
                 leave=False,
             )
             loader.set_description(f"Visualization")
-            random_visualize_idx = random.randint(0, 9)
+            random_visualize_idx = random.randint(0, 20)
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)

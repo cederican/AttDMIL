@@ -11,7 +11,7 @@ import torch.utils.data as data_utils
 from torchinfo import summary
 
 def train(config=None):
-    base_log_dir = '/home/pml06/dev/attdmil/logs'
+    base_log_dir = f'/home/pml06/dev/attdmil/logs/mu{config.mean_bag_size}'
 
     with wandb.init(
             dir=base_log_dir,
@@ -119,13 +119,13 @@ def main_sweep():
             },
         'parameters': {
             'mean_bag_size': {
-                'value': 10             # [10, 50, 100] fixed
+                'value': 50             # [10, 50, 100] fixed
             },
             'var_bag_size': {
-                'value': 2             # [2, 10, 20] fixed   
+                'value': 10             # [2, 10, 20] fixed   
             },
             'num_bags': {
-                'values': [200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]
+                'values': [50, 100, 150, 200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
                 'values': ['embedding', 'instance']     # ['embedding', 'instance']
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-        wandb.agent(sweep_id, function=train, count=32)
+        wandb.agent(sweep_id, function=train, count=56)
         print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
         time.sleep(4)
     print("All sweeps completed successfully!")
