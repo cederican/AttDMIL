@@ -4,6 +4,35 @@ class MNISTBagsConfig(SimpleNamespace):
     seed: int
     positive_num: int
     mean_bag_size: int
-    var_bag_size: int
+    var_bag_size: float
     num_bags: int
     train: bool
+
+class MILPoolingConfig(SimpleNamespace):
+    pooling_type: str
+    feature_dim: int #M
+    attspace_dim: int #L
+    attbranches: int 
+
+class MILModelConfig(SimpleNamespace):
+    device: str
+    mode: str
+    epochs: int
+    batch_size: int
+    img_size: tuple[int, int, int]
+    dataset_config: MNISTBagsConfig
+    mil_pooling_config: MILPoolingConfig
+    ckpt_path: str
+    lr: float
+    betas: tuple[float, float]
+    weight_decay: float
+    T_0: int
+    T_mult: int
+    eta_min: float
+    step_size: int
+    gamma: float
+    ckpt_save_path: str
+    misc_save_path: str
+    val_every: int
+    save_max: int
+    patience: int

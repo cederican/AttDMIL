@@ -7,3 +7,7 @@ matplotlib
 pandas
 wandb
 debugpy
+tqdm
+torchinfo
+pytorch-ignite
+scikit-learn

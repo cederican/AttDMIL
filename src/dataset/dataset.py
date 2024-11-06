@@ -4,9 +4,9 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 from src.modules.config import MNISTBagsConfig
-from src.modules.plotting import visualize_bags
+from src.modules.plotting import visualize_gtbags
 
-class MnistBags(data_utils.Dataset):
+class MNISTBags(data_utils.Dataset):
     """
     A PyTorch Dataset for generating and loading MNIST images as bags for use in multiple-instance learning (MIL) settings.
 
@@ -50,8 +50,8 @@ class MnistBags(data_utils.Dataset):
         self.var_bag_size = var_bag_size
         self.num_bags = num_bags
         self.train = train
-        self.num_train_samples = 600
-        self.num_test_samples = 100
+        self.num_train_samples = 60000
+        self.num_test_samples = 10000
 
         if self.train:
             self.train_bags_list, self.train_labels_list = self._create_bags()
@@ -79,23 +79,48 @@ class MnistBags(data_utils.Dataset):
         except Exception as e:
             print(f"Error loading data: {e}")
             return [], []
+        
+        counter = 0
+        last_bag = 0
+        bags_list = []
+        labels_list = []
 
-        # Extract data from loader
-        for (batch_data, batch_labels) in loader:
+        for batch_data, batch_labels in loader:
             all_imgs = batch_data
             all_labels = batch_labels
 
-        bags_list = []
-        labels_list = []
         num_samples = self.num_train_samples if self.train else self.num_test_samples
-        for _ in range(self.num_bags):
+
+        while counter < self.num_bags:
             bag_length = max(1, int(self.random.normal(self.mean_bag_size, self.var_bag_size, 1)[0]))
-            indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
-            labels_in_bag = all_labels[indices] == self.positive_num
-            bags_list.append(all_imgs[indices])
-            labels_list.append(labels_in_bag)
+
+            if last_bag == 0:
+                # Positive bag (contains `self.positive_num`)
+                indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
+                labels_in_bag = all_labels[indices]
+
+                if self.positive_num in labels_in_bag:
+                    labels_list.append(labels_in_bag == self.positive_num)
+                    bags_list.append(all_imgs[indices])
+                    last_bag = 1
+                    counter += 1
+            else:
+                # Negative bag (excludes `self.positive_num`)
+                indices = []
+                while len(indices) < bag_length:
+                    idx = self.random.integers(0, num_samples)
+                    if all_labels[idx] != self.positive_num:
+                        indices.append(idx)
+
+                indices = torch.LongTensor(indices)
+                labels_in_bag = all_labels[indices]
+                labels_list.append(labels_in_bag == self.positive_num)
+                bags_list.append(all_imgs[indices])
+                last_bag = 0
+                counter += 1
 
         return bags_list, labels_list
+
 
     def __len__(self):
         """
@@ -168,7 +193,7 @@ def test_visualization(
 ):
     for batch_idx, (bag, label) in enumerate(train_loader):
         print(f'Train Batch {batch_idx + 1} - Bag size: {bag.shape} - Bag Label: {label[0].numpy()}')
-        visualize_bags(bag, label, batch_idx, positive_num, show)
+        visualize_gtbags(bag, label, batch_idx, positive_num, show, "./logs/misc/data")
     
 
 if __name__ == "__main__":
@@ -188,10 +213,10 @@ if __name__ == "__main__":
         num_bags=5,
         train=False
     )
-    train_loader = data_utils.DataLoader(MnistBags(**train_config.__dict__),
+    train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),
                                          batch_size=1,
                                          shuffle=True)
-    test_loader = data_utils.DataLoader(MnistBags(**test_config.__dict__),
+    test_loader = data_utils.DataLoader(MNISTBags(**test_config.__dict__),
                                         batch_size=1,
                                         shuffle=False)
     
