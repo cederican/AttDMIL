@@ -119,10 +119,10 @@ def main_sweep():
             },
         'parameters': {
             'mean_bag_size': {
-                'value': 50             # [10, 50, 100] fixed
+                'value': 100             # [10, 50, 100] fixed
             },
             'var_bag_size': {
-                'value': 10             # [2, 10, 20] fixed   
+                'value': 20             # [2, 10, 20] fixed   
             },
             'num_bags': {
                 'values': [50, 100, 150, 200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]

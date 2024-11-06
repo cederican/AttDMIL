@@ -40,7 +40,8 @@ def visualize_gtbags(
     bag_status = "Positive" if is_positive_bag else "Negative"
     color = 'green' if is_positive_bag else 'red'
     fig.suptitle(f'Bag Status: {bag_status}', fontsize=14, color=color)
-    fig.text(0.5, 0.94, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
+    # 0.92 for mu10, 0.94 for mu50, 0.96 for mu100
+    fig.text(0.5, 0.96, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
 
     for i in range(num_images):
         ax = axes[i]
@@ -95,7 +96,8 @@ def visualize_attMechanism(
         bag_status = "Positive" if is_positive_bag else "Negative"
         color = 'green' if is_positive_bag else 'red'
         fig.suptitle(f'Bag Status: {bag_status}', fontsize=14, color=color)
-        fig.text(0.5, 0.94, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
+        # 0.92 for mu10, 0.94 for mu50, 0.96 for mu100
+        fig.text(0.5, 0.96, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
 
         for i in range(num_images):
             ax = axes[i]

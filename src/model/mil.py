@@ -106,6 +106,7 @@ class MILModel(nn.Module):
         self.pooling = MILPooling(mil_pooling_config=self.mil_pooling_config)
         feature_dim = self.mil_pooling_config.feature_dim * self.mil_pooling_config.attbranches
         
+        # Define the classifier
         if self.mode == 'instance':
             self.classifier = nn.Linear(feature_dim, 1)
         elif self.mode == 'embedding':

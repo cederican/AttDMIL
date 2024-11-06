@@ -189,11 +189,11 @@ def test_visualization(
     train_loader: data_utils.DataLoader,
     test_loader: data_utils.DataLoader,
     positive_num: int,
-    show: bool = True
+    show: bool = False
 ):
     for batch_idx, (bag, label) in enumerate(train_loader):
         print(f'Train Batch {batch_idx + 1} - Bag size: {bag.shape} - Bag Label: {label[0].numpy()}')
-        visualize_gtbags(bag, label, batch_idx, positive_num, show, "dummy_path")
+        visualize_gtbags(bag, label, batch_idx, positive_num, show, "./logs/misc/data")
     
 
 if __name__ == "__main__":
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=50,
+        num_bags=5,
         train=True
     )
     test_config = MNISTBagsConfig(
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=50,
+        num_bags=5,
         train=False
     )
     train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),
