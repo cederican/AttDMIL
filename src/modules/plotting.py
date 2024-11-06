@@ -127,3 +127,82 @@ def visualize_attMechanism(
                 print(f"Error saving plot: {e}")
             finally:
                 plt.close(fig) 
+
+
+def visualize_auc_results(
+    mean_bag_size: int,
+    var_bag_size: float,
+    save_path: str,
+    svg_flag: bool
+):
+    """
+    Visualizes AUC validation metric on MNIST-bags for different approaches, like in Figures 1-3 of the paper.
+    The approaches are: ['instance+MAX', 'instance+MEAN', 'embedding+MAX', 'embedding+MEAN', 'Attention', 'Gated-Attention']
+    Assumes that the results files are complete (include both mean and std) and there is a file corresponding to each case.
+    
+    Args:
+        mean_bag_size (int): The average number of instances per bag, e.g. 10, 50 or 100.
+        var_bag_size (float): The variance of the number of instances per bag, e.g. 2, 10, 20.
+        save_path (str): The path where the resulting plot will be saved, e.g. './logs/misc/results'.
+        svg_flag (bool): Flag stating, whether to save a plot in a vectorized format (.svg) or not (.png).
+
+    Saves:
+        Plot comparing AUC for different approaches in the given 'save_path' as 'auc_comparison_{mean_bag_size}'.
+    """
+    approaches = ['instance_poolmax', 'instance_poolmean', 'embedding_poolmax', 'embedding_poolmean', 'embedding_poolattention', 'embedding_poolgated_attention']
+    num_train_bags = [50, 100, 150, 200, 300, 400, 500]
+    auc_results = {}
+
+    for approach in approaches:
+        approach_results = []
+        for num_bags in num_train_bags:
+            path_to_res = f"./logs/mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
+            auc_mean = -1
+            auc_std = -1
+            try:
+                with open(path_to_res, 'r') as file:
+                    for line in file:
+                        if 'Mean' in line:
+                            parts = line.split(" ")
+                            try:
+                                auc_mean = float(parts[1].strip())
+                                continue
+                            except ValueError:
+                                print(f"Error: Convertion of mean '{parts[1]} to float failed.'")
+                        elif 'Std' in line:
+                            parts = line.split(" ")
+                            try:
+                                auc_std = float(parts[1].strip())
+                                continue
+                            except ValueError:
+                                print(f"Error: Convertion of std '{parts[1]} to float failed.'")
+            except FileNotFoundError:
+                print(f"Error: The AUC result file '{path_to_res}' was not found.")
+            approach_results.append((auc_mean, auc_std))
+        auc_results[approach] = approach_results
+    
+    colors = ['blue', 'green', 'orange', 'pink', 'red', 'purple']
+    markers = ['o', 's', '^', '*', 'D', 'v']
+    labels = ['instance+MAX', 'instance+MEAN', 'embedding+MAX', 'embedding+MEAN', 'Attention', 'Gated-Attention']
+
+    plt.figure(figsize=(10, 6))
+
+    for idx, (approach, data) in enumerate(auc_results.items()):
+        means = [point[0] for point in data]
+        stds = [point[1] for point in data]
+        plt.errorbar(
+            num_train_bags, means, yerr=stds, label=labels[idx], color=colors[idx],
+            marker=markers[idx], linestyle='dashdot', capsize=5
+        )
+
+    plt.xlabel('Number of training bags')
+    plt.ylabel('AUC')
+    plt.ylim((0.55, 1.0))
+    loc = 'center right' if mean_bag_size == 10 else 'lower right'
+    plt.legend(loc=loc)
+    plt.grid(visible=True, which='both', linestyle='--', alpha=0.5)
+    file_format = 'svg' if svg_flag else 'png'
+    plt.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
+
+### test
+visualize_auc_results(50, 10, "./logs", False)
