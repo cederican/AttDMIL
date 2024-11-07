@@ -156,7 +156,7 @@ def visualize_auc_results(
     for approach in approaches:
         approach_results = []
         for num_bags in num_train_bags:
-            path_to_res = f"./logs/mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
+            path_to_res = f"./logs/local_gpu/mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
             auc_mean = -1
             auc_std = -1
             try:
@@ -202,7 +202,10 @@ def visualize_auc_results(
     plt.legend(loc=loc)
     plt.grid(visible=True, which='both', linestyle='--', alpha=0.5)
     file_format = 'svg' if svg_flag else 'png'
+    # Ensure the save directory exists
+    os.makedirs(save_path, exist_ok=True)
+
     plt.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
 ### test
-visualize_auc_results(50, 10, "./logs", False)
+visualize_auc_results(10, 2, "./logs", False)
