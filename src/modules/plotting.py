@@ -181,31 +181,31 @@ def visualize_auc_results(
             approach_results.append((auc_mean, auc_std))
         auc_results[approach] = approach_results
     
-    colors = ['blue', 'green', 'orange', 'pink', 'red', 'purple']
+    colors = ['#1a661a', '#81c784', 'royalblue', 'skyblue', 'salmon', 'firebrick']
     markers = ['o', 's', '^', '*', 'D', 'v']
     labels = ['instance+MAX', 'instance+MEAN', 'embedding+MAX', 'embedding+MEAN', 'Attention', 'Gated-Attention']
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
 
     for idx, (approach, data) in enumerate(auc_results.items()):
         means = [point[0] for point in data]
         stds = [point[1] for point in data]
-        plt.errorbar(
+        ax.errorbar(
             num_train_bags, means, yerr=stds, label=labels[idx], color=colors[idx],
             marker=markers[idx], linestyle='dashdot', capsize=5
         )
 
-    plt.xlabel('Number of training bags')
-    plt.ylabel('AUC')
-    plt.ylim((0.55, 1.0))
+    ax.set_xlabel('Number of training bags')
+    ax.set_ylabel('AUC')
+    ax.set_ylim((0.55, 1.0))
     loc = 'center right' if mean_bag_size == 10 else 'lower right'
-    plt.legend(loc=loc)
-    plt.grid(visible=True, which='both', linestyle='--', alpha=0.5)
+    ax.legend(loc=loc)
+    ax.grid(which='major', color='gray', linestyle='-', linewidth=0.5)
+    ax.minorticks_on()
+    ax.grid(which='minor', color='gray', linestyle='-', linewidth=0.3)
     file_format = 'svg' if svg_flag else 'png'
-    # Ensure the save directory exists
-    os.makedirs(save_path, exist_ok=True)
-
-    plt.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
+    fig.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
 ### test
 visualize_auc_results(10, 2, "./logs", False)
+visualize_auc_results(50, 10, "./logs", False)
