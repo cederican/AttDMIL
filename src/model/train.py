@@ -48,7 +48,7 @@ def train(config=None):
                 positive_num=9,
                 mean_bag_size=config.mean_bag_size,
                 var_bag_size=config.var_bag_size,
-                num_bags=config.num_bags,
+                num_bags=1000,
                 train=False
             ),
             mil_pooling_config=MILPoolingConfig(
