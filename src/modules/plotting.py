@@ -133,7 +133,8 @@ def visualize_auc_results(
     mean_bag_size: int,
     var_bag_size: float,
     save_path: str,
-    svg_flag: bool
+    svg_flag: bool,
+    local_gpu_flag: bool
 ):
     """
     Visualizes AUC validation metric on MNIST-bags for different approaches, like in Figures 1-3 of the paper.
@@ -145,6 +146,7 @@ def visualize_auc_results(
         var_bag_size (float): The variance of the number of instances per bag, e.g. 2, 10, 20.
         save_path (str): The path where the resulting plot will be saved, e.g. './logs/misc/results'.
         svg_flag (bool): Flag stating, whether to save a plot in a vectorized format (.svg) or not (.png).
+        local_gpu_flag (bool): Flag indicating, if the results to be plotted should be the ones from local GPU or not.
 
     Saves:
         Plot comparing AUC for different approaches in the given 'save_path' as 'auc_comparison_{mean_bag_size}'.
@@ -152,11 +154,12 @@ def visualize_auc_results(
     approaches = ['instance_poolmax', 'instance_poolmean', 'embedding_poolmax', 'embedding_poolmean', 'embedding_poolattention', 'embedding_poolgated_attention']
     num_train_bags = [50, 100, 150, 200, 300, 400, 500]
     auc_results = {}
+    local_gpu_path_adjustment = 'local_gpu/' if local_gpu_flag else ''
 
     for approach in approaches:
         approach_results = []
         for num_bags in num_train_bags:
-            path_to_res = f"./logs/local_gpu/mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
+            path_to_res = f"./logs/{local_gpu_path_adjustment}mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
             auc_mean = -1
             auc_std = -1
             try:
@@ -207,5 +210,4 @@ def visualize_auc_results(
     fig.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
 ### test
-visualize_auc_results(10, 2, "./logs", False)
-visualize_auc_results(50, 10, "./logs", False)
+visualize_auc_results(100, 20, "./logs", True, False)
