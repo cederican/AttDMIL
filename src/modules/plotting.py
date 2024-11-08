@@ -41,7 +41,7 @@ def visualize_gtbags(
     color = 'green' if is_positive_bag else 'red'
     fig.suptitle(f'Bag Status: {bag_status}', fontsize=14, color=color)
     # 0.92 for mu10, 0.94 for mu50, 0.96 for mu100
-    fig.text(0.5, 0.96, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
+    fig.text(0.5, 0.92, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
 
     for i in range(num_images):
         ax = axes[i]
@@ -61,9 +61,9 @@ def visualize_gtbags(
     if show:
         plt.show()
     else:
-        plot_path = os.path.join(misc_save_path, f"sample_bag_{idx}_{bag_status}.png")
+        plot_path = os.path.join(misc_save_path, f"sample_bag_{idx}_{bag_status}.ong")
         try:
-            plt.savefig(plot_path)
+            plt.savefig(plot_path, format='ong')
             image = wandb.Image(plot_path, caption="sample bag visualization")
             wandb.log({"sample bag visualization": image})
         except Exception as e:

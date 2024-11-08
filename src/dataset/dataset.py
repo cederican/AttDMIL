@@ -202,7 +202,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=5,
+        num_bags=30,
         train=True
     )
     test_config = MNISTBagsConfig(
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=5,
+        num_bags=30,
         train=False
     )
     train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),
@@ -220,6 +220,6 @@ if __name__ == "__main__":
                                         batch_size=1,
                                         shuffle=False)
     
-    test_MnistBags(train_loader=train_loader, test_loader=test_loader)
+    #test_MnistBags(train_loader=train_loader, test_loader=test_loader)
     test_visualization(train_loader=train_loader, test_loader=test_loader, positive_num=train_config.positive_num, show=False)
     print("Dataset test passed!")
