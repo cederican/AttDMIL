@@ -2,3 +2,7 @@
 0.9812
 0.9688
 0.982
+# 5th result missing!
+Mean: 0.982
+Std: 0.010
+
