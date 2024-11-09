@@ -18,7 +18,7 @@ def train(config=None):
             config=config,
         ):
         config = wandb.config
-        base_log_dir = base_log_dir + f"/mu{config.mean_bag_size}"
+        base_log_dir = base_log_dir + f"/new_mu{config.mean_bag_size}"
         run_name = get_run_name(base_log_dir, f"{config.mode}_pool{config.pooling_type}_mu{config.mean_bag_size}_var{config.var_bag_size}_num{config.num_bags}")
         wandb.run.name = run_name  
         wandb.run.save()
@@ -70,7 +70,7 @@ def train(config=None):
             misc_save_path=misc_save_path,
             val_every=10,
             save_max=2,
-            patience=5,
+            patience=3,
         )
 
         train_loader = data_utils.DataLoader(
@@ -119,10 +119,10 @@ def main_sweep():
             },
         'parameters': {
             'mean_bag_size': {
-                'value': 100             # [10, 50, 100] fixed
+                'value': 10             # [10, 50, 100] fixed
             },
             'var_bag_size': {
-                'value': 20             # [2, 10, 20] fixed   
+                'value': 2             # [2, 10, 20] fixed   
             },
             'num_bags': {
                 'values': [50, 100, 150, 200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]
@@ -140,7 +140,7 @@ def main_sweep():
 if __name__ == "__main__":
 
     for i in range(5):
-        project_name = 'AttDMIL-PML'
+        project_name = 'AttDMIL-PML-MNIST'
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
