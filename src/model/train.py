@@ -41,7 +41,8 @@ def train(config=None):
                 mean_bag_size=config.mean_bag_size,
                 var_bag_size=config.var_bag_size,
                 num_bags=config.num_bags,
-                train=True
+                train=True,
+                test_attention=False
             ),
             val_dataset_config=MNISTBagsConfig(
                 seed=1,
@@ -49,7 +50,8 @@ def train(config=None):
                 mean_bag_size=config.mean_bag_size,
                 var_bag_size=config.var_bag_size,
                 num_bags=1000,
-                train=False
+                train=False,
+                test_attention=False
             ),
             mil_pooling_config=MILPoolingConfig(
                 pooling_type=config.pooling_type,
@@ -92,9 +94,8 @@ def train(config=None):
 
         trainer = Trainer(
             device=train_config.device,
-            rank=0,
-            world_size=1,
-            wrapper=wrapper
+            wrapper=wrapper,
+            misc_save_path=train_config.misc_save_path,
         )
 
         trainer.train(
@@ -104,7 +105,6 @@ def train(config=None):
             logger=WandbLogger(log_dir=base_log_dir, run_name=run_name),
             ckpt_save_path=train_config.ckpt_save_path,
             ckpt_save_max=train_config.save_max,
-            misc_save_path=train_config.misc_save_path,
             val_every=train_config.val_every,
             patience=train_config.patience,
         )
@@ -125,7 +125,7 @@ def main_sweep():
                 'value': 2             # [2, 10, 20] fixed   
             },
             'num_bags': {
-                'values': [50, 100, 150, 200, 300, 400, 500]     # [50, 100, 150, 200, 300, 400, 500]
+                'values': [50, 100, 150]     # [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
                 'values': ['embedding', 'instance']     # ['embedding', 'instance']

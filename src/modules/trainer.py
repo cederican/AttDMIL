@@ -13,15 +13,13 @@ class Trainer:
         self,
         *,
         device: str,
-        rank: int,
-        world_size: int,
         wrapper: AttDMILWrapper,
+        misc_save_path: str,
     ):
         self.device = device
-        self.rank = rank
-        self.world_size = world_size
         self.wrapper = wrapper
         self.model = wrapper.model
+        self.misc_save_path = misc_save_path
 
     def _configure_optimizers(
         self,
@@ -50,7 +48,6 @@ class Trainer:
         logger: WandbLogger,
         ckpt_save_path: str,
         ckpt_save_max: int,
-        misc_save_path: str,
         val_every: int,
         patience: int,
     ):  
@@ -60,7 +57,6 @@ class Trainer:
         self.logger = logger
         self.ckpt_save_path = ckpt_save_path
         self.ckpt_save_max = ckpt_save_max
-        self.misc_save_path = misc_save_path
         self.val_every = val_every
 
         progress_bar = tqdm(
@@ -209,5 +205,25 @@ class Trainer:
 
                 if batch_idx == random_visualize_idx:
                     self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step)
+                    break
+    
+    def test_visualize(
+            self,
+            test_loader: DataLoader,
+    ):
+        self.model.eval()
+        with th.no_grad():
+            loader = tqdm(
+                test_loader,
+                bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}",
+                colour="blue",
+                leave=False,
+            )
+            loader.set_description(f"Test Visualization")
+
+            for batch_idx, batch in enumerate(loader):
+                batch = move_to_device(batch, self.device)
+                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx)
+                if batch_idx == 10:
                     break
             

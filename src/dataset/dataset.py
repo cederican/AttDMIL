@@ -31,7 +31,8 @@ class MNISTBags(data_utils.Dataset):
         mean_bag_size: int,
         var_bag_size: int,
         num_bags: int,
-        train: bool
+        train: bool,
+        test_attention: bool
     ):
         """
         Initializes MnistBags dataset by generating bags of MNIST images.
@@ -50,6 +51,7 @@ class MNISTBags(data_utils.Dataset):
         self.var_bag_size = var_bag_size
         self.num_bags = num_bags
         self.train = train
+        self.test_attention = test_attention
         self.num_train_samples = 60000
         self.num_test_samples = 10000
 
@@ -94,30 +96,56 @@ class MNISTBags(data_utils.Dataset):
         while counter < self.num_bags:
             bag_length = max(1, int(self.random.normal(self.mean_bag_size, self.var_bag_size, 1)[0]))
 
-            if last_bag == 0:
-                # Positive bag (contains `self.positive_num`)
-                indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
-                labels_in_bag = all_labels[indices]
-
-                if self.positive_num in labels_in_bag:
-                    labels_list.append(labels_in_bag == self.positive_num)
-                    bags_list.append(all_imgs[indices])
-                    last_bag = 1
-                    counter += 1
-            else:
-                # Negative bag (excludes `self.positive_num`)
+            if self.test_attention:
                 indices = []
-                while len(indices) < bag_length:
-                    idx = self.random.integers(0, num_samples)
-                    if all_labels[idx] != self.positive_num:
-                        indices.append(idx)
+                positive_indices = np.where(all_labels == self.positive_num)[0]
+                
+                if len(positive_indices) < 4:
+                    print("Insufficient positive samples in dataset for attention testing.")
+                    return [], []
+                
+                selected_positive_indices = self.random.choice(positive_indices, 4, replace=False)
+                indices.extend(selected_positive_indices)
 
+                if len(indices) < bag_length:
+                    remaining_length = bag_length - len(indices)
+                    other_indices = [idx for idx in range(num_samples) if all_labels[idx] != self.positive_num]
+                    selected_other_indices = self.random.choice(other_indices, remaining_length, replace=False)
+                    indices.extend(selected_other_indices)
+
+                self.random.shuffle(indices)
                 indices = torch.LongTensor(indices)
                 labels_in_bag = all_labels[indices]
-                labels_list.append(labels_in_bag == self.positive_num)
+                labels_list.append((labels_in_bag == self.positive_num))
                 bags_list.append(all_imgs[indices])
-                last_bag = 0
+
                 counter += 1
+
+            else:
+                if last_bag == 0:
+                    # Positive bag (contains `self.positive_num`)
+                    indices = torch.LongTensor(self.random.integers(0, num_samples, bag_length))
+                    labels_in_bag = all_labels[indices]
+
+                    if self.positive_num in labels_in_bag:
+                        labels_list.append(labels_in_bag == self.positive_num)
+                        bags_list.append(all_imgs[indices])
+                        last_bag = 1
+                        counter += 1
+                else:
+                    # Negative bag (excludes `self.positive_num`)
+                    indices = []
+                    while len(indices) < bag_length:
+                        idx = self.random.integers(0, num_samples)
+                        if all_labels[idx] != self.positive_num:
+                            indices.append(idx)
+
+                    indices = torch.LongTensor(indices)
+                    labels_in_bag = all_labels[indices]
+                    labels_list.append(labels_in_bag == self.positive_num)
+                    bags_list.append(all_imgs[indices])
+                    last_bag = 0
+                    counter += 1
 
         return bags_list, labels_list
 
@@ -203,7 +231,8 @@ if __name__ == "__main__":
         mean_bag_size=10,
         var_bag_size=2,
         num_bags=30,
-        train=True
+        train=True,
+        test_attention=False
     )
     test_config = MNISTBagsConfig(
         seed=1,
@@ -211,7 +240,8 @@ if __name__ == "__main__":
         mean_bag_size=10,
         var_bag_size=2,
         num_bags=30,
-        train=False
+        train=False,
+        test_attention=False
     )
     train_loader = data_utils.DataLoader(MNISTBags(**train_config.__dict__),
                                          batch_size=1,
@@ -220,6 +250,6 @@ if __name__ == "__main__":
                                         batch_size=1,
                                         shuffle=False)
     
-    #test_MnistBags(train_loader=train_loader, test_loader=test_loader)
+    test_MnistBags(train_loader=train_loader, test_loader=test_loader)
     test_visualization(train_loader=train_loader, test_loader=test_loader, positive_num=train_config.positive_num, show=False)
     print("Dataset test passed!")
