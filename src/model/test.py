@@ -13,7 +13,7 @@ from torchinfo import summary
 def test(config=None):
     base_log_dir = f'/home/pml06/dev/attdmil/logs'
 
-    ckpt_save_path = "/home/pml06/dev/attdmil/logs/mu10/embedding_poolattention_mu10_var2_num200/checkpoints/best_ep=10_val_loss=0.3138.pt"
+    ckpt_save_path = "/home/pml06/dev/attdmil/logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num200/checkpoints/best_ep=10_val_loss=0.4450.pt"
     misc_save_path = os.path.join(os.path.dirname(os.path.dirname(ckpt_save_path)), 'misc')
     run_name = os.path.basename(os.path.dirname(os.path.dirname(ckpt_save_path)))
 
@@ -35,7 +35,7 @@ def test(config=None):
             positive_num=9,
             mean_bag_size=10,
             var_bag_size=2,
-            num_bags=2,
+            num_bags=5,
             train=False,
             test_attention=True
         ),
@@ -74,45 +74,8 @@ def test(config=None):
         misc_save_path=test_config.misc_save_path,
     )
     trainer.test_visualize(test_loader)
-
-
-# def main_sweep():
-#     sweep_config = {
-#         'method': 'grid',
-#         'metric': {
-#             'name': 'val/loss',
-#             'goal': 'minimize' 
-#             },
-#         'parameters': {
-#             'mean_bag_size': {
-#                 'value': 10             # [10, 50, 100] fixed
-#             },
-#             'var_bag_size': {
-#                 'value': 2             # [2, 10, 20] fixed   
-#             },
-#             'num_bags': {
-#                 'values': [50, 100, 150]     # [50, 100, 150, 200, 300, 400, 500]
-#             },
-#             'mode': {
-#                 'values': ['embedding', 'instance']     # ['embedding', 'instance']
-#             },
-#             'pooling_type': {
-#                 'values': ['max', 'mean', 'attention', 'gated_attention']       # ['max', 'mean', 'attention', 'gated_attention']
-#             },
-#         }
-#     }
-#     return sweep_config
    
 if __name__ == "__main__":
 
     test()
-
-    # for i in range(5):
-    #     project_name = 'AttDMIL-PML-MNIST'
-    #     # Initialize a sweep
-    #     sweep_config = main_sweep()
-    #     sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-    #     wandb.agent(sweep_id, function=train, count=56)
-    #     print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
-    #     time.sleep(4)
-    print("All sweeps completed successfully!")
+    print("Test successful!")
