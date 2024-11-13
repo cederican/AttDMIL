@@ -205,12 +205,12 @@ def visualize_auc_results(
     ax.legend(loc=loc)
     ax.grid(which='major', color='gray', linestyle='-', linewidth=0.5)
     ax.minorticks_on()
-    ax.grid(which='minor', color='gray', linestyle='-', linewidth=0.3)
+    ax.grid(which='minor', color='gray', linestyle='-', linewidth=0.2)
     file_format = 'svg' if svg_flag else 'png'
     fig.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
 
 if __name__ == "__main__":
-    visualize_auc_results(10, 2, "./logs", False, False)
+    visualize_auc_results(10, 2, "./logs", False, True)
     visualize_auc_results(50, 10, "./logs", False, True)
     visualize_auc_results(100, 20, "./logs", False, True)
