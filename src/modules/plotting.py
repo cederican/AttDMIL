@@ -61,9 +61,9 @@ def visualize_gtbags(
     if show:
         plt.show()
     else:
-        plot_path = os.path.join(misc_save_path, f"sample_bag_{idx}_{bag_status}.ong")
+        plot_path = os.path.join(misc_save_path, f"sample_bag_{idx}_{bag_status}.png")
         try:
-            plt.savefig(plot_path, format='ong')
+            plt.savefig(plot_path, format='png')
             image = wandb.Image(plot_path, caption="sample bag visualization")
             wandb.log({"sample bag visualization": image})
         except Exception as e:
@@ -97,7 +97,7 @@ def visualize_attMechanism(
         color = 'green' if is_positive_bag else 'red'
         fig.suptitle(f'Bag Status: {bag_status}', fontsize=14, color=color)
         # 0.92 for mu10, 0.94 for mu50, 0.96 for mu100
-        fig.text(0.5, 0.96, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
+        fig.text(0.5, 0.92, f"positive label: {positive_num}", ha='center', fontsize=12, color='black')
 
         for i in range(num_images):
             ax = axes[i]
@@ -118,7 +118,7 @@ def visualize_attMechanism(
         if show:
             plt.show()
         else:
-            plot_path = os.path.join(misc_save_path, f"att_bag_{bag_status}.png")
+            plot_path = os.path.join(misc_save_path, f"att_bag_{bag_status}_{global_step}.png")
             try:
                 plt.savefig(plot_path)
                 image = wandb.Image(plot_path, caption="attention mechanism visualization")
@@ -159,7 +159,7 @@ def visualize_auc_results(
     for approach in approaches:
         approach_results = []
         for num_bags in num_train_bags:
-            path_to_res = f"./logs/{local_gpu_path_adjustment}mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
+            path_to_res = f"./logs/{local_gpu_path_adjustment}new_mu{mean_bag_size}/{approach}_mu{mean_bag_size}_var{var_bag_size}_num{num_bags}/misc/metric_5runs.txt"
             auc_mean = -1
             auc_std = -1
             try:
@@ -188,7 +188,7 @@ def visualize_auc_results(
     markers = ['o', 's', '^', '*', 'D', 'v']
     labels = ['instance+MAX', 'instance+MEAN', 'embedding+MAX', 'embedding+MEAN', 'Attention', 'Gated-Attention']
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 8), dpi=600)
 
     for idx, (approach, data) in enumerate(auc_results.items()):
         means = [point[0] for point in data]
@@ -205,9 +205,12 @@ def visualize_auc_results(
     ax.legend(loc=loc)
     ax.grid(which='major', color='gray', linestyle='-', linewidth=0.5)
     ax.minorticks_on()
-    ax.grid(which='minor', color='gray', linestyle='-', linewidth=0.3)
+    ax.grid(which='minor', color='gray', linestyle='-', linewidth=0.2)
     file_format = 'svg' if svg_flag else 'png'
     fig.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
-### test
-visualize_auc_results(100, 20, "./logs", True, False)
+
+if __name__ == "__main__":
+    visualize_auc_results(10, 2, "./logs", False, True)
+    visualize_auc_results(50, 10, "./logs", False, True)
+    visualize_auc_results(100, 20, "./logs", False, True)

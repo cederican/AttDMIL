@@ -7,6 +7,7 @@ class MNISTBagsConfig(SimpleNamespace):
     var_bag_size: float
     num_bags: int
     train: bool
+    test_attention: bool
 
 class MILPoolingConfig(SimpleNamespace):
     pooling_type: str
