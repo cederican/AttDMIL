@@ -1,8 +1,9 @@
 import os
-import torch as th
 import random
-from torch.utils.data import DataLoader
+import torch as th
 from tqdm import tqdm
+from torch.utils.data import DataLoader
+
 from src.model.mil_wrapper import AttDMILWrapper
 from src.modules.logger import WandbLogger
 from src.modules.utils import move_to_device
@@ -23,16 +24,8 @@ class Trainer:
 
     def _configure_optimizers(
         self,
-        opt_state_dict_lst: list | None = None,
-        lr_scheduler_state_dict_lst: list | None = None,
     ):
         self.optimizer, self.lr_scheduler = self.wrapper.configure_optimizers()
-        # if opt_state_dict_lst is not None:
-        #     for i, opt in enumerate(self.optimizers):
-        #         opt.load_state_dict(opt_state_dict_lst[i])
-        # if lr_scheduler_state_dict_lst is not None:
-        #     for i, lr in enumerate(self.lr_schedulers):
-        #         lr.load_state_dict(lr_scheduler_state_dict_lst[i])
     
     def _init_val_metrics(
         self,
@@ -66,6 +59,7 @@ class Trainer:
         )
         progress_bar.set_description("Training")
 
+        # init stop criteria helpers
         best_value = float("inf")
         no_improvement_count = 0
         for epoch in progress_bar:
@@ -78,6 +72,7 @@ class Trainer:
             if self.val_every is not None and epoch % self.val_every == 0:
                 global_step = self._validate(epoch, val_loader, global_step)
                 current_val_loss, current_val_error, current_val_auc  = self.wrapper.val_metrics.compute()["val/loss"], self.wrapper.val_metrics.compute()["val/error"], self.wrapper.val_metrics.compute()["val/auc"]
+                
                 # stopping criteria based on proposed approach in the paper
                 combined_stop_metric = current_val_loss + current_val_error
 
@@ -86,7 +81,7 @@ class Trainer:
                     best_value = combined_stop_metric
                     no_improvement_count = 0
 
-                    # Visualize
+                    # visualize attention mechanism
                     self.visualize(val_loader, global_step)
                     global_step += 1
                     
@@ -123,16 +118,13 @@ class Trainer:
         loader.set_description(f"Epoch {epoch}")
 
         for batch_idx, batch in enumerate(loader):
-            
             self.optimizer.zero_grad()
+            # ensure that tensors are on the same device
             batch = move_to_device(batch, self.device)
-            
             loss_dict = self.wrapper.training_step(self.model, batch)
-
             self.optimizer.step()
             self.lr_scheduler.step()
             global_step += 1
-
             for key, value in loss_dict.items():
                 self.logger.log_scalar(f"train/{key}", value.item(), global_step)
             self.logger.log_scalar("lr", self.lr_scheduler.get_last_lr()[0], global_step)
@@ -154,10 +146,9 @@ class Trainer:
                 leave=False,
             )
             loader.set_description(f"Validation on Epoch {epoch}")
-            
+        
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-
                 self.wrapper.validation_step(batch)
             global_step += 1
             computed_metrics = self.wrapper.val_metrics.compute()
@@ -175,13 +166,11 @@ class Trainer:
         if len(ckpt_files) >= self.ckpt_save_max:
             file_to_remove = sorted(ckpt_files, key=os.path.getctime)[0]
             os.remove(file_to_remove)
-
         state_dict = {
             "model": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
         }
-
         th.save(state_dict, os.path.join(self.ckpt_save_path, f"{ckpt_name}.pt"))
 
     def visualize(
@@ -198,11 +187,11 @@ class Trainer:
                 leave=False,
             )
             loader.set_description(f"Visualization")
+            # visualize random batch so that it is not always the same
             random_visualize_idx = random.randint(0, 20)
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-
                 if batch_idx == random_visualize_idx:
                     self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step)
                     break

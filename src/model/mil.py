@@ -127,7 +127,11 @@ class MILModel(nn.Module):
             return y_bag_pred, y_instance_pred
 
 
+# test functionality of the different model approaches
 if __name__ == "__main__":
+    """
+    test just one model approach
+    """
     # train_config = MILModelConfig(
     #     mode='embedding',
     #     batch_size=1,
@@ -166,6 +170,10 @@ if __name__ == "__main__":
 
     #         print(f"Bag {i + 1} - True Label: {label}, Predicted Bag Score: {y_bag_pred.item()}, Predicted Instance Score: {y_instance_pred}")
     #         break 
+
+    """
+    test all model approach
+    """
     modes = ['instance', 'embedding']
     pooling_types = ['max', 'mean', 'attention', 'gated_attention']
 
@@ -185,7 +193,8 @@ if __name__ == "__main__":
                     mean_bag_size=10,
                     var_bag_size=2,
                     num_bags=5,
-                    train=True
+                    train=True,
+                    test_attention=False
                 ),
                 mil_pooling_config=MILPoolingConfig(
                     pooling_type=pooling_type,

@@ -1,19 +1,21 @@
 import os
-import time
 import torch as th
+import torch.utils.data as data_utils
+from torchinfo import summary
 from src.modules.config import MILModelConfig, MNISTBagsConfig, MILPoolingConfig
 from src.dataset.dataset import MNISTBags
 from src.model.mil_wrapper import AttDMILWrapper
 from src.model.mil import MILModel
-from src.modules.logger import prepare_folder, get_run_name, bcolors, WandbLogger
+from src.modules.logger import bcolors
 from src.modules.trainer import Trainer
-import torch.utils.data as data_utils
-from torchinfo import summary
 
-def test(config=None):
+
+def test():
     base_log_dir = f'/home/pml06/dev/attdmil/logs'
 
-    ckpt_save_path = "/home/pml06/dev/attdmil/logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num200/checkpoints/best_ep=10_val_loss=0.4450.pt"
+    # this path has to be manually chosen!!!
+    ckpt_save_path = "/home/pml06/dev/attdmil/logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/checkpoints/best_ep=10_val_loss=0.5671.pt"
+
     misc_save_path = os.path.join(os.path.dirname(os.path.dirname(ckpt_save_path)), 'misc')
     run_name = os.path.basename(os.path.dirname(os.path.dirname(ckpt_save_path)))
 
@@ -60,11 +62,13 @@ def test(config=None):
         save_max=None,
         patience=None,
     )
+
     test_loader = data_utils.DataLoader(
         MNISTBags(**test_config.train_dataset_config.__dict__),
         batch_size=test_config.batch_size,
         shuffle=False
     )
+
     model = MILModel(mil_model_config=test_config).to(test_config.device)
     wrapper = AttDMILWrapper(model=model, config=test_config, epochs=test_config.epochs)
     summary(model, input_data=th.rand(test_config.batch_size, *test_config.img_size).to(test_config.device))
@@ -74,6 +78,7 @@ def test(config=None):
         misc_save_path=test_config.misc_save_path,
     )
     trainer.test_visualize(test_loader)
+
    
 if __name__ == "__main__":
 
