@@ -230,16 +230,16 @@ if __name__ == "__main__":
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=30,
+        num_bags=5,
         train=True,
-        test_attention=False
+        test_attention=True
     )
     test_config = MNISTBagsConfig(
         seed=1,
         positive_num=9,
         mean_bag_size=10,
         var_bag_size=2,
-        num_bags=30,
+        num_bags=5,
         train=False,
         test_attention=False
     )

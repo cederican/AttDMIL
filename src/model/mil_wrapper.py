@@ -1,10 +1,11 @@
 import torch as th
 import torch.utils.data as data_utils
+from torchinfo import summary
+
 from src.modules.ModelWrapperABC import ModelWrapper
 from src.model.mil import MILModel
 from src.dataset.dataset import MNISTBags
 from src.modules.config import MILModelConfig, MNISTBagsConfig, MILPoolingConfig
-from torchinfo import summary 
 from src.modules.metrics import LossErrorAccuracyPrecisionRecallF1Metric
 from src.modules.plotting import visualize_gtbags, visualize_attMechanism
 
@@ -16,7 +17,6 @@ class AttDMILWrapper(ModelWrapper):
             model: MILModel,
             config: dict,
             epochs: int,
-
     ):
         super().__init__()
         self.model = model
@@ -44,6 +44,8 @@ class AttDMILWrapper(ModelWrapper):
         #     T_mult=self.config.T_mult,
         #     eta_min=self.config.eta_min
         # )
+
+        # use lr_scheduler but constant lr
         lr_scheduler = th.optim.lr_scheduler.StepLR(
             optimizer,
             step_size=self.config.step_size,
@@ -90,7 +92,6 @@ class AttDMILWrapper(ModelWrapper):
         #visualize_gtbags(batch[0], batch[1], global_step, self.config.train_dataset_config.positive_num, False, misc_save_path)
         visualize_attMechanism(model, batch, self.config.train_dataset_config.positive_num, global_step, False, misc_save_path)
 
-
     def _error(
             self,
             model: MILModel,
@@ -125,6 +126,7 @@ class AttDMILWrapper(ModelWrapper):
             print(f"Error loading model from {ckpt_path}: {e}")
 
 
+# test functionality of the model wrapper
 if __name__ == "__main__":
 
     train_config = MILModelConfig(
@@ -138,7 +140,8 @@ if __name__ == "__main__":
             mean_bag_size=10,
             var_bag_size=2,
             num_bags=10,
-            train=True
+            train=True,
+            test_attention=False
         ),
         mil_pooling_config=MILPoolingConfig(
             pooling_type='attention',
@@ -150,12 +153,10 @@ if __name__ == "__main__":
         lr=0.0005,
         betas=(0.9, 0.999),
         weight_decay=1e-4,
-        T_0=10,
-        T_mult=2,
-        eta_min=1e-6
+        step_size=1000000,
+        gamma=0.1,
     )
 
-    # Initialize model and wrapper
     model = MILModel(mil_model_config=train_config)
     wrapper = AttDMILWrapper(model=model, config=train_config, epochs=train_config.epochs)
 
@@ -170,15 +171,10 @@ if __name__ == "__main__":
     optimizer, lr_scheduler = wrapper.configure_optimizers()
 
     for i, batch in enumerate(data_loader):
-       
         result = wrapper.training_step(
             model=model,
             batch=batch,
-            optimizer=optimizer,
-            lr_scheduler=lr_scheduler,
-            global_step=i
         )
         print(f"Training Step {i + 1} - Loss: {result['loss']}, Error: {result['error']}, Accuracy: {result['acc']}")
-
         if i >= 2:
             break
