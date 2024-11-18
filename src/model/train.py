@@ -13,7 +13,15 @@ from src.modules.trainer import Trainer
 
 
 def train(config=None):
-    base_log_dir = f'/home/pml06/dev/attdmil/logs'
+    #add docstring
+    """
+    Trains the MIL model using the provided configuratio
+
+    Args:
+        config (dict): Dictionary containing the configuration parameters
+    """
+    base_log_dir = 'C:/Users/Comme/PycharmProjects/attdmil/logs/local_gpu'
+
     with wandb.init(
             dir=base_log_dir,
             config=config,
@@ -112,6 +120,9 @@ def train(config=None):
 
 
 def main_sweep():
+    """
+    Define the sweep configuration
+    """
     sweep_config = {
         'method': 'grid',
         'metric': {
@@ -120,7 +131,7 @@ def main_sweep():
             },
         'parameters': {
             'mean_bag_size': {
-                'value': 10            # [10, 50, 100] fixed
+                'value': 10             # [10, 50, 100] fixed
             },
             'var_bag_size': {
                 'value': 2             # [2, 10, 20] fixed   

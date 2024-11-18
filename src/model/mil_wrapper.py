@@ -11,6 +11,14 @@ from src.modules.plotting import visualize_gtbags, visualize_attMechanism
 
 
 class AttDMILWrapper(ModelWrapper):
+    """
+    Wrapper class for attention-based deep MIL model.
+
+    Attributes:
+        model (MILModel): The MIL model to be trained.
+        config (dict): The configuration parameters for the model.
+        epochs (int): The number of training
+    """
     def __init__(
             self,
             *,
@@ -27,9 +35,18 @@ class AttDMILWrapper(ModelWrapper):
             self.load_model_checkpoint(config.ckpt_path)
     
     def init_val_metrics(self):
+        """
+        Initializes the validation metrics.
+        """
         self.val_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, device="cuda")
 
     def configure_optimizers(self):
+        """
+        Configures the optimizer and the learning rate scheduler.
+
+        Returns:
+            tuple: The optimizer and the learning rate scheduler.
+        """
         print(f"Using base learning rate: {self.config.lr}")
         optimizer = th.optim.Adam(
             self.model.parameters(),
@@ -58,6 +75,13 @@ class AttDMILWrapper(ModelWrapper):
             model: MILModel,
             batch: tuple,
     ):
+        """
+        Shared step for training and validation.
+
+        Args:
+            model (MILModel): The MIL model.
+            batch (tuple): The input data and labels.
+        """
         bag, label = batch
         loss = self._loss(model, bag, label)
         error, acc = self._error(model, bag, label)
@@ -69,6 +93,16 @@ class AttDMILWrapper(ModelWrapper):
             model: MILModel,
             batch: tuple,
     ):
+        """
+        Training step for the model.
+
+        Args:
+            model (MILModel): The MIL model.
+            batch (tuple): The input data and labels.
+
+        Returns:
+            loss_dict: The computed loss, error, and accuracy.
+        """
         batch[0] = batch[0].squeeze(0)
         loss_dict = self.shared_step(model, batch)
         loss_dict["loss"].backward()
@@ -79,6 +113,12 @@ class AttDMILWrapper(ModelWrapper):
             self,
             batch: tuple,
     ):
+        """
+        Validation step for the model.
+
+        Args:
+            batch (tuple): The input data and labels.
+        """
         batch[0] = batch[0].squeeze(0)
         self.val_metrics.update(batch)
 
@@ -89,6 +129,15 @@ class AttDMILWrapper(ModelWrapper):
             misc_save_path: str,
             global_step: int,
     ):
+        """
+        Visualizes the model predictions.
+
+        Args:
+            model (MILModel): The MIL model.
+            batch (tuple): The input data and labels.
+            misc_save_path (str): The path to save the visualization files.
+            global_step (int): The global step.
+        """
         #visualize_gtbags(batch[0], batch[1], global_step, self.config.train_dataset_config.positive_num, False, misc_save_path)
         visualize_attMechanism(model, batch, self.config.train_dataset_config.positive_num, global_step, False, misc_save_path)
 
@@ -98,6 +147,17 @@ class AttDMILWrapper(ModelWrapper):
             bag: th.Tensor,
             label: th.Tensor,
     ):
+        """
+        Computes the error and accuracy for the model.
+
+        Args:
+            model (MILModel): The MIL model.
+            bag (th.Tensor): The input bag.
+            label (th.Tensor): The input label.
+
+        Returns:
+            tuple: The error and accuracy values.
+        """
         y_bag_true = label[0].float()
         y_bag_pred, y_instance_pred = model(bag)
         y_bag_pred_binary = th.where(y_bag_pred > 0.5, 1, 0)
@@ -111,6 +171,17 @@ class AttDMILWrapper(ModelWrapper):
             bag: th.Tensor,
             label: th.Tensor,
     ):
+        """
+        Computes the loss for the model.
+
+        Args:
+            model (MILModel): The MIL model.
+            bag (th.Tensor): The input bag.
+            label (th.Tensor): The input label.
+
+        Returns:
+            th.Tensor: The computed loss.
+        """
         y_bag_true = label[0].float()
         y_bag_pred, y_instance_pred = model(bag)
         y_bag_pred = th.clamp(y_bag_pred, min=1e-4, max=1. - 1e-4)
@@ -118,6 +189,15 @@ class AttDMILWrapper(ModelWrapper):
         return loss
 
     def load_model_checkpoint(self, ckpt_path):
+        """
+        Loads the model from a checkpoint file.
+
+        Args:
+            ckpt_path (str): The path to the checkpoint file.
+
+        Returns:
+            bool: True if the model was loaded successfully, False otherwise.
+        """
         try:
             model_state = th.load(ckpt_path) 
             self.model.load_state_dict(model_state["model"])

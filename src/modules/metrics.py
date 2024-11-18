@@ -4,6 +4,13 @@ from ignite.exceptions import NotComputableError
 from sklearn.metrics import roc_auc_score
 
 class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
+    """
+    Custom metric for calculating loss, error, accuracy, precision, recall, F1 score, and AUC.
+
+    Attributes:
+        model (nn.Module): The model being evaluated.
+        device (str): The device on which computations are performed.
+    """
     def __init__(self, model, device="cpu"):
         self.model = model
         self._loss_sum = 0
@@ -18,6 +25,9 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         super().__init__(device=device)
 
     def reset(self):
+        """
+        Resets all metric counters to zero.
+        """
         self._loss_sum = 0
         self._error_sum = 0
         self._accuracy_sum = 0
@@ -30,6 +40,12 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         super().reset()
 
     def update(self, batch):
+        """
+        Updates the metric counters based on the current batch.
+
+        Args:
+            batch (tuple): A tuple containing the input data and labels.
+        """
         bag, label = batch[0], batch[1]
         y_bag_true = label[0].float()
         y_bag_pred, _ = self.model(bag)
@@ -57,6 +73,12 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         self._y_scores.extend(y_bag_pred.detach().cpu().numpy())
 
     def compute(self):
+        """
+        Computes the final metric values.
+
+        Returns:
+            dict: A dictionary containing the computed metrics.
+        """
         if self._num_examples == 0:
             raise NotComputableError("LossErrorAccuracyPrecisionRecallF1Metric must have at least one example before it can be computed.")
         
