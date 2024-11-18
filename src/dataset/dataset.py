@@ -220,16 +220,14 @@ def test_MnistBags(
 
 def test_visualization(
     train_loader: data_utils.DataLoader,
-    test_loader: data_utils.DataLoader,
     positive_num: int,
     show: bool = False
 ):
     """
-    Visualizes the bags and their labels for both training and test sets.
+    Tests the visualization of bags with individual labels.
 
     Args:
         train_loader (data_utils.DataLoader): DataLoader for training bags with MNIST instances.
-        test_loader (data_utils.DataLoader): DataLoader for test bags with MNIST instances.
         positive_num (int): The digit that is considered the positive label in bags (e.g., 9).
         show (bool): If True, displays the plot; otherwise, saves it to file.
     """
