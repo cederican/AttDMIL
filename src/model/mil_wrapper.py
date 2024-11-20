@@ -76,11 +76,11 @@ class AttDMILWrapper(ModelWrapper):
             batch: tuple,
     ):
         """
-        Shared step for training and validation.
+        Shared step ideally for training and validation.
 
         Args:
             model (MILModel): The MIL model.
-            batch (tuple): The input data and labels.
+            batch (tuple): The bag and label.
         """
         bag, label = batch
         loss = self._loss(model, bag, label)
@@ -98,7 +98,7 @@ class AttDMILWrapper(ModelWrapper):
 
         Args:
             model (MILModel): The MIL model.
-            batch (tuple): The input data and labels.
+            batch (tuple): The bag and label.
 
         Returns:
             loss_dict: The computed loss, error, and accuracy.
@@ -114,10 +114,10 @@ class AttDMILWrapper(ModelWrapper):
             batch: tuple,
     ):
         """
-        Validation step for the model.
+        Validation step for the model, update the validation metrics.
 
         Args:
-            batch (tuple): The input data and labels.
+            batch (tuple): The bag and label.
         """
         batch[0] = batch[0].squeeze(0)
         self.val_metrics.update(batch)
@@ -134,9 +134,8 @@ class AttDMILWrapper(ModelWrapper):
 
         Args:
             model (MILModel): The MIL model.
-            batch (tuple): The input data and labels.
+            batch (tuple): The bag and label.
             misc_save_path (str): The path to save the visualization files.
-            global_step (int): The global step.
         """
         #visualize_gtbags(batch[0], batch[1], global_step, self.config.train_dataset_config.positive_num, False, misc_save_path)
         visualize_attMechanism(model, batch, self.config.train_dataset_config.positive_num, global_step, False, misc_save_path)

@@ -1,93 +1,223 @@
-# attdmil
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
+<!--
+*** Thanks for checking out the Best-README-Template. If you have a suggestion
+*** that would make this better, please fork the repo and create a pull request
+*** or simply open an issue with the tag "enhancement".
+*** Don't forget to give the project a star!
+*** Thanks again! Now go create something AMAZING! :D
+-->
 
 
 
-## Getting started
+<!-- PROJECT SHIELDS -->
+<!--
+*** I'm using markdown "reference style" links for readability.
+*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
+*** See the bottom of this document for the declaration of the reference variables
+*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
+*** https://www.markdownguide.org/basic-syntax/#reference-style-links
+-->
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
-## Add your files
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/othneildrew/Best-README-Template">
+    <img src="/home/pml06/dev/attdmil/logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
+  </a>
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+  <h3 align="center">Attention-based Deep Multiple Instance Learning <br> & <br> MNIST-Bags</h3>
 
-```
-cd existing_repo
-git remote add origin https://git.tu-berlin.de/cederic/attdmil.git
-git branch -M main
-git push -uf origin main
-```
+  <p align="center">
+    <br />
+    <a href="https://git.tu-berlin.de/cederic/attdmil/-/issues">Report Bug</a>
+    ·
+    <a href="https://git.tu-berlin.de/cederic/attdmil/-/issues">Request Feature</a>
+  </p>
+</div>
 
-## Integrate with your tools
 
-- [ ] [Set up project integrations](https://git.tu-berlin.de/cederic/attdmil/-/settings/integrations)
 
-## Collaborate with your team
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#dataset-curation">Dataset curation</a></li>
+        <li><a href="#model-training">Model Training</a></li>
+        <li><a href="#visualization">Visualization</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
 
-## Test and Deploy
 
-Use the built-in continuous integration in GitLab.
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+This repository is part of our participation in the Machine Learning Project for the Winter Semester 2024/25. Our objective is to reconstruct the results presented in the paper "Attention-based Deep Multiple Instance Learning" by [Ilse et al. (2018)]. This work leverages an attention mechanism to enhance the performance of deep multiple instance learning (MIL), a paradigm widely used in weakly supervised learning scenarios.
 
-***
+The project is divided into three milestones, culminating in the successful replication of the paper's outcomes. This repository focuses on the progress achieved during the first milestone, which includes the following tasks:
 
-# Editing this README
+1. Dataset Curation:
+Preparation and preprocessing of datasets used in the original study to ensure compatibility with our implementation.
+2. Data Visualization:
+Exploration and visualization of the dataset to gain insights and validate its characteristics against the paper's specifications.
+3. Model Prototyping:
+Development of initial models, laying the groundwork for the implementation of the attention-based MIL approach.
+4. Baseline Method Evaluation:
+Implementation and assessment of the baseline methods outlined in the paper to establish a reference point for performance comparison.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+This repository serves as a comprehensive resource for documenting our progress, including code, results, and insights gained during the replication process.
 
-## Suggestions for a good README
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
 
-## Name
-Choose a self-explaining name for your project.
+<!-- GETTING STARTED -->
+## Getting Started
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+To get a local copy and replicate our experiments follow these simple steps. 
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Installation
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+* clone the repo
+   ```sh
+   git clone https://git.tu-berlin.de/cederic/attdmil.git
+   ```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### Dataset curation
 
+* to inspect the MNIST-Bags dataset run 
+   ```sh
+   python ./dev/attdmil/src/dataset/dataset.py
+   ```
+
+### Model Training
+
+* for training just run
+   ```sh
+   python ./dev/attdmil/src/model/train.py
+   ```
+
+* create a Weights and Biases account to be able to execute the implemented grid search properly
+   ```sh
+   https://wandb.ai/site/
+   ```
+
+* you can define a specific train config in train.py
+   ```sh
+   sweep_config = {
+        'method': 'grid',
+        'metric': {
+            'name': 'val/loss',
+            'goal': 'minimize' 
+            },
+        'parameters': {
+            'mean_bag_size': {
+                'value': 10            # [10, 50, 100] fixed
+            },
+            'var_bag_size': {
+                'value': 2             # [2, 10, 20] fixed   
+            },
+            'num_bags': {
+                'values': [50, 100, 150]     # [50, 100, 150, 200, 300, 400, 500]
+            },
+            'mode': {
+                'values': ['embedding', 'instance']     # ['embedding', 'instance']
+            },
+            'pooling_type': {
+                'values': ['max', 'mean', 'attention', 'gated_attention']       # ['max', 'mean', 'attention', 'gated_attention']
+            },
+        }
+    }
+   ```
+
+### Visualization
+
+* for testing just run 
+   ```sh
+   python ./dev/attdmil/src/model/test.py
+   ```
+
+* change the "ckpt_save_path" to the desired run and still adjust the MILModelConfig 
+   ```sh
+  ckpt_save_path = "./logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/checkpoints/best_ep=10_val_loss=0.5671.pt"  
+   ```
+
+* the visualizations of the attention weights are stored in
+   ```sh
+   ./logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc
+   ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- USAGE EXAMPLES -->
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+The model enables you to do Multiple Instance Learning with different approaches. It allows you to do classification on bag lavel. The attention-based mechanisms provide the socalled attention weights which serve as a form of interpretability.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+![Example Outputs](./logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc/att_bag_Positive_1.png)
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
+<!-- LICENSE -->
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- CONTACT -->
+## Contact
+
+* Cederic Aßmann - cederic.assmann@campus.tu-berlin.de
+* Friedrich Hagedorn - hagedorn@campus.tu-berlin.de
+* Jakub Sliwa - j.sliwa@campus.tu-berlin.de
+
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+Helpful libraries and papers used in the project
+
+* [WandB](https://wandb.ai/site)
+* [Attention-based Deep Multiple Instance Learning Paper](https://arxiv.org/abs/1802.04712)
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
+[license-url]: LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/cederic-aßmann-41904322b/

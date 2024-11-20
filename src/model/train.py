@@ -13,14 +13,14 @@ from src.modules.trainer import Trainer
 
 
 def train(config=None):
-    #add docstring
     """
-    Trains the MIL model using the provided configuratio
+    Trains the MIL model using the provided configuration
 
     Args:
         config (dict): Dictionary containing the configuration parameters
     """
-    base_log_dir = 'C:/Users/Comme/PycharmProjects/attdmil/logs/local_gpu'
+
+    base_log_dir = '/home/pml06/dev/attdmil/logs/local_gpu'
 
     with wandb.init(
             dir=base_log_dir,
@@ -37,7 +37,7 @@ def train(config=None):
         print(f"{bcolors.OKBLUE}Checkpoint save path: {bcolors.BOLD}{ckpt_save_path}{bcolors.ENDC}")
         print(f"{bcolors.OKBLUE}Misc save path: {bcolors.BOLD}{misc_save_path}{bcolors.ENDC}")
     
-        # Configure your model with parameters from the sweep
+        # Configure the model with parameters from the sweep
         train_config = MILModelConfig(
             device=th.device("cuda" if th.cuda.is_available() else "cpu"),
             mode=config.mode,
@@ -123,6 +123,7 @@ def main_sweep():
     """
     Define the sweep configuration
     """
+    
     sweep_config = {
         'method': 'grid',
         'metric': {
