@@ -172,7 +172,7 @@ To get a local copy and replicate our experiments follow these simple steps.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-The model enables you to do Multiple Instance Learning with different approaches. It allows you to do classification on bag lavel. The attention-based mechanisms provide the socalled attention weights which serve as a form of interpretability.
+The model enables you to do Multiple Instance Learning with different approaches. It allows you to do classification on bag lavel. The attention-based mechanisms provide the so called attention weights which serve as a form of interpretability.
 
 ![Example Outputs](./media/att_bag_Positive_1.png)
 
