@@ -27,7 +27,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="/home/pml06/dev/attdmil/media/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
+    <img src="./media/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
   </a>
 
   <h3 align="center">Attention-based Deep Multiple Instance Learning <br> & <br> MNIST-Bags</h3>
