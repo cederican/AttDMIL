@@ -7,6 +7,6 @@ MNIST
 *.log
 *.json
 *.pt
-*.png
+logs/**/*.png
 *.yaml
 wandb

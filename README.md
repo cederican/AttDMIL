@@ -27,7 +27,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="/home/pml06/dev/attdmil/logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
+    <img src="/home/pml06/dev/attdmil/media/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
   </a>
 
   <h3 align="center">Attention-based Deep Multiple Instance Learning <br> & <br> MNIST-Bags</h3>
@@ -174,7 +174,7 @@ To get a local copy and replicate our experiments follow these simple steps.
 
 The model enables you to do Multiple Instance Learning with different approaches. It allows you to do classification on bag lavel. The attention-based mechanisms provide the socalled attention weights which serve as a form of interpretability.
 
-![Example Outputs](./logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc/att_bag_Positive_1.png)
+![Example Outputs](./media/att_bag_Positive_1.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
