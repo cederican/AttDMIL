@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 
 class ModelWrapper(ABC):
+    """
+    Abstract base class for model wrappers.
+    """
     @abstractmethod
     def configure_optimizers(self):
         pass

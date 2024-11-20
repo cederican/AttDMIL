@@ -43,6 +43,8 @@ class MNISTBags(data_utils.Dataset):
             mean_bag_size (int): The average number of instances (images) per bag.
             var_bag_size (float): The variance in the number of instances per bag.
             num_bags (int): The total number of bags in the dataset.
+            train (bool): Flag indicating if this dataset instance is for training or testing.
+            test_attention (bool): Flag indicating if this dataset is for testing attention mechanisms.
         """
         self.random = np.random.default_rng(seed)
 
@@ -153,6 +155,9 @@ class MNISTBags(data_utils.Dataset):
     def __len__(self):
         """
         Returns the number of bags in the dataset.
+
+        Returns:
+            int: Number of bags.
         """
         return len(self.train_labels_list) if self.train else len(self.test_labels_list)
 
@@ -215,10 +220,17 @@ def test_MnistBags(
 
 def test_visualization(
     train_loader: data_utils.DataLoader,
-    test_loader: data_utils.DataLoader,
     positive_num: int,
     show: bool = False
 ):
+    """
+    Tests the visualization of bags with individual labels.
+
+    Args:
+        train_loader (data_utils.DataLoader): DataLoader for training bags with MNIST instances.
+        positive_num (int): The digit that is considered the positive label in bags (e.g., 9).
+        show (bool): If True, displays the plot; otherwise, saves it to file.
+    """
     for batch_idx, (bag, label) in enumerate(train_loader):
         print(f'Train Batch {batch_idx + 1} - Bag size: {bag.shape} - Bag Label: {label[0].numpy()}')
         visualize_gtbags(bag, label, batch_idx, positive_num, show, "./logs/misc/data")
