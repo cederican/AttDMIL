@@ -4,7 +4,8 @@ import torch as th
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
-from src.model.mil_wrapper import AttDMILWrapper
+from src.model.mnist_mil_wrapper import AttDMILWrapper
+from src.model.histo_mil_wrapper import HistoMILWrapper
 from src.modules.logger import WandbLogger
 from src.modules.utils import move_to_device
 
@@ -14,7 +15,7 @@ class Trainer:
         self,
         *,
         device: str,
-        wrapper: AttDMILWrapper,
+        wrapper: HistoMILWrapper,
         misc_save_path: str,
     ):
         self.device = device
@@ -67,6 +68,11 @@ class Trainer:
             # Training
             global_step = self._train(train_loader, epoch, global_step)
             self.lr_scheduler.step()
+
+            # visualize attention mechanism every epoch
+            if self.val_every is not None and epoch % (self.val_every-4) == 0:
+                self.visualize(val_loader, global_step)
+                global_step += 1
     
             # Validation
             if self.val_every is not None and epoch % self.val_every == 0:
@@ -82,8 +88,8 @@ class Trainer:
                     no_improvement_count = 0
 
                     # visualize attention mechanism
-                    self.visualize(val_loader, global_step)
-                    global_step += 1
+                    #self.visualize(val_loader, global_step)
+                    #global_step += 1
                     
                     if self.ckpt_save_path is not None:
                         self._save_model(f"best_ep={epoch}_val_loss={best_value:.4f}")
@@ -188,13 +194,14 @@ class Trainer:
             )
             loader.set_description(f"Visualization")
             # visualize random batch so that it is not always the same
-            random_visualize_idx = random.randint(0, 20)
+            #random_visualize_idx = 0 #random.randint(0, 20)
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-                if batch_idx == random_visualize_idx:
-                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step)
+                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
+                if batch_idx == 1:
                     break
+                    
     
     def test_visualize(
             self,
@@ -212,7 +219,7 @@ class Trainer:
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx)
+                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test')
                 if batch_idx == 10:
                     break
             

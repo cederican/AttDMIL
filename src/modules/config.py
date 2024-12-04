@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-
+from typing import Union
 
 class MNISTBagsConfig(SimpleNamespace):
     seed: int
@@ -9,6 +9,16 @@ class MNISTBagsConfig(SimpleNamespace):
     num_bags: int
     train: bool
     test_attention: bool
+
+
+class HistoBagsConfig(SimpleNamespace):
+    seed: int
+    num_bags: int
+    h5_path: str
+    color_normalize: bool
+    datatype: str
+    mode: str
+    split: float
 
 
 class MILPoolingConfig(SimpleNamespace):
@@ -24,7 +34,7 @@ class MILModelConfig(SimpleNamespace):
     epochs: int
     batch_size: int
     img_size: tuple[int, int, int]
-    dataset_config: MNISTBagsConfig
+    dataset_config: Union[MNISTBagsConfig, HistoBagsConfig]
     mil_pooling_config: MILPoolingConfig
     ckpt_path: str
     lr: float
@@ -41,13 +51,6 @@ class MILModelConfig(SimpleNamespace):
     save_max: int
     patience: int
 
+    # MS2 addition
+    just_features: bool
 
-class HistoBagsConfig(SimpleNamespace):
-    ########
-    seed: int
-    positive_num: int
-    mean_bag_size: int
-    var_bag_size: float
-    num_bags: int
-    train: bool
-    test_attention: bool

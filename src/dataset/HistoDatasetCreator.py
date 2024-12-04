@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import torch
 from src.modules.logger import bcolors
+from tqdm import tqdm
 
 
 class HistoDatasetCreator:
@@ -64,7 +65,6 @@ class HistoDatasetCreator:
         print(f"Tumor cases: {self.num_tumor}")
         print(f"Test cases: {self.num_test}")
 
-
         data_lst = os.listdir(self.input_path)
         data_lst.sort(key=str)
 
@@ -72,7 +72,7 @@ class HistoDatasetCreator:
             train_group = h5file.create_group('train')
             test_group = h5file.create_group('test')
 
-            for _, case in enumerate(data_lst):
+            for _, case in tqdm(enumerate(data_lst)):
                 case_path = os.path.join(self.input_path, case)
                 if not os.path.isdir(case_path):
                     continue
@@ -101,7 +101,7 @@ class HistoDatasetCreator:
                         metadata_group.create_dataset(col, data=data, compression='gzip')
     
                     case_group.attrs["columns"] = list(df.columns)
-                    print(f"Metadata for {case} saved.")
+                    print(f"{bcolors.OKGREEN}Metadata for {case} saved.{bcolors.ENDC}")
 
                 patches = os.listdir(os.path.join(self.input_path, case))
                 patches.sort(key=str)
@@ -110,10 +110,11 @@ class HistoDatasetCreator:
                     if not patch.endswith(".jpg") or patch == "metadata":
                         continue
                     patch_path = os.path.join(case_path, patch)
-                    print(f"Processing {patch}")
+                    #print(f"Processing {patch}")
 
-                    img = Image.open(patch_path).convert('RGB')
-                    img_array = np.array(img)
+                    #img = Image.open(patch_path).convert('RGB')
+                    #img_array = np.array(img)
+                    img_array = None
 
                     patch_name = os.path.splitext(patch)[0]
                     if 'path' in df.columns and f"{case}/{patch_name}.jpg" in df['path'].values:
@@ -138,18 +139,20 @@ class HistoDatasetCreator:
 
                     features_group = case_group.create_group("features")
                     features_group.create_dataset("feature_matrix", data=feature_matrix, compression='gzip')
-                    print(f"Features for {case} saved.")
+                    print(f"{bcolors.OKGREEN}Features for {case} saved.{bcolors.ENDC}")
                 
-                # add annotations slide level
-                # annotations_path = os.path.join(self.annotations_path, f"{case}.png")
-                # if os.path.exists(annotations_path):
-                #     print(f"Loading annotations for {case} from {annotations_path}")
-                #     annotations = Image.open(annotations_path).convert('RGB')
-                #     annotations_array = np.array(annotations)
+                #add annotations slide level
+                annotations_path = os.path.join(self.annotations_path, f"{case}.png")
+                if os.path.exists(annotations_path):
+                    print(f"Loading annotations for {case} from {annotations_path}")
+                    annotations = Image.open(annotations_path)
+                    #annotations_array = np.array(annotations)
+                    width, height = annotations.size
+                    resolution = (width, height)
 
-                #     annotations_group = case_group.create_group("annotations")
-                #     annotations_group.create_dataset("annotations", data=annotations_array, compression='gzip')
-                #     print(f"Annotations for {case} saved.")
+                    annotations_group = case_group.create_group("annotation")
+                    annotations_group.create_dataset("resolution", data=resolution, compression='gzip')
+                    print(f"{bcolors.OKGREEN}Resolution for {case} saved.{bcolors.ENDC}")
                 
                 # add label
                 label_df = pd.read_csv(self.label_path)
@@ -158,12 +161,14 @@ class HistoDatasetCreator:
                     cls = label_df.loc[label_df["case_id"] == case].iloc[0]["class"]
                     case_group.attrs["label"] = label
                     case_group.attrs["class"] = cls
-                    print(f"Label for {case} saved.")
+                    print(f"{bcolors.OKGREEN}Label for {case} saved.{bcolors.ENDC}")
 
         h5file.close()
 
         print(f"Train cases processed: {len(self.train_case_lst)}")
         print(f"Test cases processed: {len(self.test_case_lst)}")
+
+
 
     
     def dataframe_to_hdf5_compatible(self, df):
@@ -179,7 +184,7 @@ class HistoDatasetCreator:
 if __name__ == "__main__":
     input_path = "/home/space/datasets/camelyon16/patches/20x"
     output_path = "/home/pml06/dev/attdmil/HistoData/"
-    dataset_name = "camelyon16.h5"
+    dataset_name = "camelyon16_x.h5"
     slide_metadata_path = "/home/space/datasets/camelyon16/metadata/v001/slide_metadata.csv"
     feature_path = "/home/space/datasets/camelyon16/features/20x/ctranspath_pt"
     annotations_path = "/home/space/datasets/camelyon16/annotations"

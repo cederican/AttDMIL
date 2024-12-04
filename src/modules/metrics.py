@@ -11,8 +11,9 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         model (nn.Module): The model being evaluated.
         device (str): The device on which computations are performed.
     """
-    def __init__(self, model, device="cpu"):
+    def __init__(self, model, mode, device="cpu"):
         self.model = model
+        self.mode = mode
         self._loss_sum = 0
         self._error_sum = 0
         self._accuracy_sum = 0
@@ -46,8 +47,12 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         Args:
             batch (tuple): A tuple containing the input data and labels.
         """
-        bag, label = batch[0], batch[1]
-        y_bag_true = label[0].float()
+        if self.mode == False:
+            bag, label = batch[0], batch[1]
+            y_bag_true = label[0].float()
+        else:
+            bag, label, cls, dict = batch
+            y_bag_true = label
         y_bag_pred, _ = self.model(bag)
   
         y_bag_pred = th.clamp(y_bag_pred, min=1e-4, max=1.0 - 1e-4)
