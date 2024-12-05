@@ -70,7 +70,7 @@ class Trainer:
             self.lr_scheduler.step()
 
             # visualize attention mechanism every epoch
-            if self.val_every is not None and epoch % (self.val_every-4) == 0:
+            if self.val_every is not None and epoch < 10:
                 self.visualize(val_loader, global_step)
                 global_step += 1
     
@@ -87,9 +87,6 @@ class Trainer:
                     best_value = combined_stop_metric
                     no_improvement_count = 0
 
-                    # visualize attention mechanism
-                    #self.visualize(val_loader, global_step)
-                    #global_step += 1
                     
                     if self.ckpt_save_path is not None:
                         self._save_model(f"best_ep={epoch}_val_loss={best_value:.4f}")
@@ -106,7 +103,30 @@ class Trainer:
         if self.ckpt_save_path is not None:
             self._save_model("last")
 
+        #self.logger.finish()
+    
+    def test(
+        self,
+        test_loader: DataLoader,
+    ):
+        self.model.eval()
+        with th.no_grad():
+            loader = tqdm(
+                test_loader,
+                bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}",
+                colour="blue",
+                leave=False,
+            )
+            loader.set_description(f"Testing")
+
+            for batch_idx, batch in enumerate(loader):
+                batch = move_to_device(batch, self.device)
+                self.wrapper.test_step(batch)
+            computed_metrics = self.wrapper.test_metrics.compute()
+            for name, value in computed_metrics.items():
+                self.logger.log_scalar_test(f"{name}", value)
         self.logger.finish()
+    
 
     def _train(
             self,
@@ -199,7 +219,7 @@ class Trainer:
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
                 self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
-                if batch_idx == 1:
+                if batch_idx == 3:
                     break
                     
     
@@ -220,6 +240,6 @@ class Trainer:
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
                 self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test')
-                if batch_idx == 10:
+                if batch_idx == 20:
                     break
             

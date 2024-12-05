@@ -24,7 +24,7 @@ def train(config=None):
         base_log_dir = base_log_dir + f"/{config.num_bags}"
         if not os.path.exists(base_log_dir):
             os.makedirs(base_log_dir)
-        run_name = get_run_name(base_log_dir, f"adim_{config.attspace_dim}_{config.mode}_pool{config.pooling_type}_num{config.num_bags}")
+        run_name = get_run_name(base_log_dir, f"{config.mode}_pool{config.pooling_type}_lr_{config.lr}_wd_{config.weight_decay}")
         wandb.run.name = run_name  
         wandb.run.save()
         ckpt_save_path, misc_save_path = prepare_folder(base_log_dir, run_name)
@@ -39,7 +39,6 @@ def train(config=None):
             mode=config.mode,
             epochs=100,
             batch_size=1,
-            img_size=(1, 28, 28),
             train_dataset_config=HistoBagsConfig(
                 seed=1,
                 prop_num_bags=config.num_bags,
@@ -60,7 +59,16 @@ def train(config=None):
                 val_mode=True,
                 split=0.8,
             ),
-            test_dataset_config=None,
+            test_dataset_config=HistoBagsConfig(
+                seed=1,
+                prop_num_bags=1,
+                h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
+                color_normalize=False,
+                datatype="features",
+                mode="test",
+                val_mode=False,
+                split=0.8,
+            ),
             mil_pooling_config=MILPoolingConfig(
                 pooling_type=config.pooling_type,
                 feature_dim=768,
@@ -95,6 +103,11 @@ def train(config=None):
             batch_size=train_config.batch_size,
             shuffle=False
         )
+        test_loader = data_utils.DataLoader(
+            HistoDataset(**train_config.test_dataset_config.__dict__),
+            batch_size=train_config.batch_size,
+            shuffle=False
+        )
 
         # Initialize model and wrapper
         model = MILModel(mil_model_config=train_config).to(train_config.device)
@@ -119,6 +132,10 @@ def train(config=None):
             patience=train_config.patience,
         )
 
+        trainer.test(
+            test_loader=test_loader,
+        )
+
 
 def main_sweep():
     """
@@ -133,19 +150,19 @@ def main_sweep():
             },
         'parameters': {
             'lr': {
-                'values': [0.0001]     # [0.0005, 0.0001, 0.00005]
+                'values': [0.0005, 0.0001, 0.0005]     # [0.0005, 0.0001, 0.00005]
             },
             'weight_decay': {
-                'values': [1e-4]     # [1e-4, 1e-5, 1e-6]
+                'values': [1e-3, 1e-4]     # [1e-4, 1e-5]
             },
             'num_bags': {
-                'values': [0.3]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
+                'values': [1]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
-                'values': ['embedding']     # ['embedding', 'instance']
+                'values': ['embedding','instance']     # ['embedding', 'instance']
             },
             'pooling_type': {
-                'values': ['attention', 'gated_attention']       # ['max', 'mean', 'attention', 'gated_attention']
+                'values': ['attention', 'gated_attention', 'max', 'mean']       # ['max', 'mean', 'attention', 'gated_attention']
             },
             'attspace_dim': {
                 'values': [256]     # [128, 256, 512]
@@ -162,7 +179,7 @@ if __name__ == "__main__":
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-        wandb.agent(sweep_id, function=train, count=2)
+        wandb.agent(sweep_id, function=train, count=48)
         print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
         time.sleep(4)
     print("All sweeps completed successfully!")

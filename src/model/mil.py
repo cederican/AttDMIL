@@ -127,7 +127,7 @@ class MILModel(nn.Module):
         if self.mode == 'instance':
             y_instance_pred = self.sigmoid(self.classifier(instance_features))      # (num_instances, feature_dim) -> (num_instances, 1)
             y_bag_pred, _ = self.pooling(y_instance_pred)                           # (num_instances, 1) -> (1,)
-            return y_bag_pred, None                                      
+            return y_bag_pred, y_instance_pred                                      
          
         elif self.mode == 'embedding':
             bag_representation, y_instance_pred = self.pooling(instance_features)   # (num_instances, feature_dim) -> (1, feature_dim), (num_instances, 1)/None

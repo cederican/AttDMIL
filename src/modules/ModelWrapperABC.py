@@ -15,6 +15,10 @@ class ModelWrapper(ABC):
     @abstractmethod
     def validation_step(self):
         pass
+
+    @abstractmethod
+    def test_step(self):
+        pass
     
     @abstractmethod
     def visualize_step(self):

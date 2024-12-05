@@ -11,8 +11,9 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         model (nn.Module): The model being evaluated.
         device (str): The device on which computations are performed.
     """
-    def __init__(self, model, mode, device="cpu"):
+    def __init__(self, model, just_features, mode, device="cpu"):
         self.model = model
+        self.just_features = just_features
         self.mode = mode
         self._loss_sum = 0
         self._error_sum = 0
@@ -47,7 +48,7 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         Args:
             batch (tuple): A tuple containing the input data and labels.
         """
-        if self.mode == False:
+        if self.just_features == False:
             bag, label = batch[0], batch[1]
             y_bag_true = label[0].float()
         else:
@@ -100,12 +101,23 @@ class LossErrorAccuracyPrecisionRecallF1Metric(Metric):
         except ValueError:
             auc = float('nan')
 
-        return {
-            "val/loss": avg_loss,
-            "val/error": avg_error,
-            "val/accuracy": avg_accuracy,
-            "val/precision": precision,
-            "val/recall": recall,
-            "val/f1": f1_score,
-            "val/auc": auc
-        }
+        if self.mode == "val":
+            return {
+                "val/loss": avg_loss,
+                "val/error": avg_error,
+                "val/accuracy": avg_accuracy,
+                "val/precision": precision,
+                "val/recall": recall,
+                "val/f1": f1_score,
+                "val/auc": auc
+            }
+        elif self.mode == "test":
+            return {
+                "test/loss": avg_loss,
+                "test/error": avg_error,
+                "test/accuracy": avg_accuracy,
+                "test/precision": precision,
+                "test/recall": recall,
+                "test/f1": f1_score,
+                "test/auc": auc
+            }

@@ -84,19 +84,42 @@ def get_tumor_annotation(
 
 def cut_off(
         y_instance_pred,
+        vis_mode,
         top_k=10,
         threshold=0.9,
 ):
     if not isinstance(y_instance_pred, th.Tensor):
         y_instance_pred = th.tensor(y_instance_pred)
-    top_values, top_indices = th.topk(y_instance_pred, top_k)
-    cumulative_sum = th.sum(top_values)
-    if cumulative_sum*100 > threshold:
-        modified_array = y_instance_pred.clone()
-        modified_array[top_indices] = 0.0
-        print(f"Attention Map cut off at {top_k} positions")
-    else:
-        modified_array = y_instance_pred
-        print(f"Attention Map not cut off at {top_k} positions")
-    return modified_array
+
+    if vis_mode == "raw":
+        return y_instance_pred
+
+    elif vis_mode == "log":
+        y_instance_pred = np.clip(y_instance_pred, a_min=1e-10, a_max=None)
+        y_instance_pred = th.tensor(y_instance_pred)
+
+        return y_instance_pred
+    
+    elif vis_mode == "percentile":
+        percentile_min = np.percentile(y_instance_pred, 1)
+        percentile_max = np.percentile(y_instance_pred, 99)
+        value_clipped = th.clamp(y_instance_pred, percentile_min, percentile_max)
+        y_instance_pred = (value_clipped - percentile_min) / (percentile_max - percentile_min)
+
+        return y_instance_pred
+
+
+
+
+    
+    # top_values, top_indices = th.topk(y_instance_pred, top_k)
+    # cumulative_sum = th.sum(top_values)
+    # if cumulative_sum*100 > threshold:
+    #     modified_array = y_instance_pred.clone()
+    #     modified_array[top_indices] = 0.0
+    #     print(f"Attention Map cut off at {top_k} positions")
+    # else:
+    #     modified_array = y_instance_pred
+    #     print(f"Attention Map not cut off at {top_k} positions")
+    # return modified_array
     

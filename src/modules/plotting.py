@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from src.modules.utils import get_tumor_annotation, logits_to_label, cut_off
+from matplotlib.colors import LogNorm
 
 def visualize_gtbags(
     bags: np.ndarray,
@@ -219,6 +220,7 @@ def visualize_histo_att(
         misc_save_path: str,
         global_step: int,
         mode: str,
+        vis_mode: str,
 ):
     features, label, cls, dict = batch
     features = features.squeeze(0)
@@ -227,7 +229,7 @@ def visualize_histo_att(
     if y_instance_pred is None:
         return
     else:
-        y_instance_pred = cut_off(y_instance_pred, top_k=10, threshold=0.9)
+        y_instance_pred = cut_off(y_instance_pred, top_k=10, threshold=0.9, vis_mode=vis_mode)
         y_instance_pred = y_instance_pred.detach().numpy()
         positions = [dict[i][1] for i in range(len(dict)-2)]
         patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
@@ -243,6 +245,8 @@ def visualize_histo_att(
         ax.invert_yaxis()
         max_ak = max(y_instance_pred)
         min_ak = min(y_instance_pred)
+        log_norm = LogNorm(vmin=y_instance_pred.min(), vmax=y_instance_pred.max())
+
         for i, position in enumerate(positions):
             x, y = position
             x = x.item()/16
@@ -252,7 +256,10 @@ def visualize_histo_att(
             patch_height = patch_size_abs[i].item()/16
 
             value = y_instance_pred[i]
-            value = (value - min_ak) / (max_ak - min_ak)
+            if vis_mode == "percentile" or vis_mode == "raw":
+                value = (value - min_ak) / (max_ak - min_ak)
+            if vis_mode == "log":
+                value = log_norm(value)
             color = plt.cm.Reds(value)
             rect = patches.Rectangle((x, y), patch_width, patch_height, linewidth=0, edgecolor=None, facecolor=color)
             ax.add_patch(rect)
@@ -264,7 +271,7 @@ def visualize_histo_att(
             if not os.path.exists(batch_dir):
                 os.makedirs(batch_dir)
 
-            image_save_path = f"{batch_dir}/{mode}_aks_label_{logits_to_label(label)}_{global_step+1}.png"
+            image_save_path = f"{batch_dir}/{mode}_aks_{logits_to_label(label)}_{global_step+1}_{vis_mode}.png"
             plt.savefig(image_save_path, dpi=100, bbox_inches='tight', pad_inches=0)
 
             img = Image.open(image_save_path)

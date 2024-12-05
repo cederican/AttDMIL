@@ -29,7 +29,9 @@ class HistoMILWrapper(ModelWrapper):
         """
         Initializes the validation metrics.
         """
-        self.val_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, mode=self.config.just_features, device="cuda")
+        self.val_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="val", device="cuda")
+        self.test_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="test", device="cuda")
+    
     
     def configure_optimizers(self):
         """
@@ -82,6 +84,13 @@ class HistoMILWrapper(ModelWrapper):
     ):
         batch[0] = batch[0].squeeze(0)
         self.val_metrics.update(batch)
+    
+    def test_step(
+            self,
+            batch: tuple,
+    ):
+        batch[0] = batch[0].squeeze(0)
+        self.test_metrics.update(batch)
 
     def visualize_step(
             self,
@@ -92,11 +101,13 @@ class HistoMILWrapper(ModelWrapper):
             mode: str,
     ):
         if mode == "train":
-            visualize_histo_att(model, batch, misc_save_path, global_step, mode)
+            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
             #visualize_histo_gt(model, batch, misc_save_path)
             #visualize_histo_patches(model, batch, misc_save_path)
         elif mode == "test":
-            visualize_histo_att(model, batch, misc_save_path, global_step, mode)
+            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
+            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "log")
+            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "percentile")
 
         
     
