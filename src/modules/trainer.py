@@ -125,6 +125,9 @@ class Trainer:
             computed_metrics = self.wrapper.test_metrics.compute()
             for name, value in computed_metrics.items():
                 self.logger.log_scalar_test(f"{name}", value)
+                ## verify!!!!!!!!!!!!
+                if name == "test/auc":
+                    self.logger.log_AUC(self.misc_save_path, value)
         self.logger.finish()
     
 

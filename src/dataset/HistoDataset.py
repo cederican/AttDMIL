@@ -10,7 +10,7 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 from src.modules.config import HistoBagsConfig
-from src.modules.utils import label_to_logits, cls_to_logits
+from src.modules.utils import label_to_logits, cls_to_logits, create_metadata
 
 class HistoDataset(data_utils.Dataset):
     def __init__(
@@ -31,84 +31,126 @@ class HistoDataset(data_utils.Dataset):
         self.mode = mode
         self.datatype = datatype
 
-        with h5py.File(self.h5_path, "r+") as h5:
-            if self.mode == 'train':
-                self.name_lst = list(h5["train"].keys())
-                print(f"Number of training cases: {len(self.name_lst)}")
-                print(f"Apply train-val split with split ratio: {split}")
+        metadata_path_cluster = "/home/space/datasets/camelyon16/metadata/v001/slide_metadata.csv"
+        modif_metadata_path_cluster = "/home/pml06/dev/attdmil/logs/histo/metadata/split_metadata.csv"
 
-                normal_entries = [name for name in self.name_lst if name.startswith("normal")]
-                tumor_entries = [name for name in self.name_lst if name.startswith("tumor")]
-                print(f"Number of normal cases: {len(normal_entries)} in proportion: {len(normal_entries)/len(self.name_lst)}")
-                print(f"Number of tumor cases: {len(tumor_entries)} in proportion: {len(tumor_entries)/len(self.name_lst)}")
-                micro_tumors = []
-                macro_tumors = []
+        if os.path.isfile(modif_metadata_path_cluster):
+            print(f"Loading modified metadata from {modif_metadata_path_cluster}")
+            slide_metadata = pd.read_csv(modif_metadata_path_cluster)
 
-                for case in tumor_entries:
-                    if h5[self.mode][case].attrs["class"] == "micro":
-                        micro_tumors.append(case)
-                    elif h5[self.mode][case].attrs["class"] == "macro":
-                        macro_tumors.append(case)
-                print(f"Number of micro tumors: {len(micro_tumors)} in proportion: {len(micro_tumors)/len(tumor_entries)}")
-                print(f"Number of macro tumors: {len(macro_tumors)} in proportion: {len(macro_tumors)/len(tumor_entries)}")
+            train_lst = slide_metadata[slide_metadata['split'] == 'train']['slide_id'].tolist()
+            val_lst = slide_metadata[slide_metadata['split'] == 'val']['slide_id'].tolist()
 
-                train_lst = []
-                val_lst = []
+            random.seed(seed)
+            random.shuffle(train_lst)
+            random.shuffle(val_lst)
 
-                train_lst += normal_entries[:int(len(normal_entries)*split)]
-                val_lst += normal_entries[int(len(normal_entries)*split):]
-                train_lst += micro_tumors[:int(len(micro_tumors)*split)]
-                val_lst += micro_tumors[int(len(micro_tumors)*split):]
-                train_lst += macro_tumors[:int(len(macro_tumors)*split)]
-                val_lst += macro_tumors[int(len(macro_tumors)*split):]
-
-                random.seed(seed)
-                random.shuffle(train_lst)
-                random.shuffle(val_lst)
-
-                if val_mode == False:
-                    self.name_lst = train_lst if prop_num_bags == 1 else train_lst[:int(len(train_lst)*prop_num_bags)]
-                elif val_mode == True:
-                    self.name_lst = val_lst if prop_num_bags == 1 else val_lst[:int(len(val_lst)*prop_num_bags)]
-                
-                if "splitting" not in h5:
-                    print("Creating splitting table...")
-                    all_cases = train_lst + val_lst
-                    split_info = []
-                    for case in all_cases:
-                        split = "train" if case in train_lst else "val"
-
-                        if case.startswith("normal"):
-                            cls = "normal"
-                            label = "normal"
-                        elif case in micro_tumors:
-                            cls = "micro"
-                            label = "tumor"
-                        elif case in macro_tumors:
-                            cls = "macro"
-                            label = "tumor"
-                        else:
-                            raise ValueError(f"Unknown case type for: {case}")
-
-                        split_info.append({"case_name": case, "split": split, "class": cls, "label": label})
-
-                    split_df = pd.DataFrame(split_info).sort_values(by="case_name")
-
-                    csv_data = split_df.to_csv(index=False).encode("utf-8")
-                    h5.create_dataset("splitting", data=csv_data)
-                    print("Splitting table saved successfully.")
-                else:
-                    print("Splitting table already exists in the HDF5 file.")
-                h5.close()
-
-                    # with h5py.File(self.h5_path, "r") as h5:
-                    # if "splitting" in h5:
-                    #     csv_data = h5["splitting"][:].tobytes().decode("utf-8")
-                    #     split_df = pd.read_csv(pd.compat.StringIO(csv_data))
-                    #     print(split_df.head())
-
-            elif self.mode == 'test':
+            if val_mode == False and mode == 'train':
+                self.name_lst = train_lst if prop_num_bags == 1 else train_lst[:int(len(train_lst)*prop_num_bags)]
+            elif val_mode == True and mode == 'train':
+                self.name_lst = val_lst if prop_num_bags == 1 else val_lst[:int(len(val_lst)*prop_num_bags)]
+            elif mode == 'test':
                 self.name_lst = list(h5["test"].keys())
+
+        else:
+
+            with h5py.File(self.h5_path, "r+") as h5:
+                if self.mode == 'train':
+                    self.name_lst = list(h5["train"].keys())
+                    print(f"Number of training cases: {len(self.name_lst)}")
+                    print(f"Apply train-val split with split ratio: {split}")
+
+                    slide_metadata = pd.read_csv(metadata_path_cluster)
+
+                    # Check for cases/patients with multiple slides
+                    grouped_cases = slide_metadata.groupby('case_id')['slide_id'].apply(list).to_dict()
+                    case_to_slides = {case: slides for case, slides in grouped_cases.items() if len(slides) > 1}
+
+                    print(f"Number of cases with multiple slides: {len(case_to_slides)}")
+
+                    def split_group(entries, split_ratio):
+                        train_split = []
+                        val_split = []
+
+                        for case in entries:
+                            case_slides = grouped_cases.get(case, [case])
+                            if len(train_split) < int(len(entries) * split_ratio):
+                                train_split.extend(case_slides)
+                            else:
+                                val_split.extend(case_slides)
+
+                        return train_split, val_split
+
+                    normal_entries = [name for name in self.name_lst if name.startswith("normal")]
+                    tumor_entries = [name for name in self.name_lst if name.startswith("tumor")]
+                    print(f"Number of normal cases: {len(normal_entries)} in proportion: {len(normal_entries)/len(self.name_lst)}")
+                    print(f"Number of tumor cases: {len(tumor_entries)} in proportion: {len(tumor_entries)/len(self.name_lst)}")
+                    micro_tumors = []
+                    macro_tumors = []
+
+                    for case in tumor_entries:
+                        if h5[self.mode][case].attrs["class"] == "micro":
+                            micro_tumors.append(case)
+                        elif h5[self.mode][case].attrs["class"] == "macro":
+                            macro_tumors.append(case)
+                    print(f"Number of micro tumors: {len(micro_tumors)} in proportion: {len(micro_tumors)/len(tumor_entries)}")
+                    print(f"Number of macro tumors: {len(macro_tumors)} in proportion: {len(macro_tumors)/len(tumor_entries)}")
+
+                    train_lst = []
+                    val_lst = []
+
+                    normal_train, normal_val = split_group(normal_entries, split)
+                    micro_train, micro_val = split_group(micro_tumors, split)
+                    macro_train, macro_val = split_group(macro_tumors, split)
+
+                    train_lst = normal_train + micro_train + macro_train
+                    val_lst = normal_val + micro_val + macro_val
+
+                    # create a .csv with the fixed split for train and val
+                    if not os.path.isfile(modif_metadata_path_cluster):
+                        create_metadata(normal_train ,micro_train,macro_train, normal_val,micro_val,macro_val, slide_metadata, modif_metadata_path_cluster)
+
+                    random.seed(seed)
+                    random.shuffle(train_lst)
+                    random.shuffle(val_lst)
+
+                    if val_mode == False:
+                        self.name_lst = train_lst if prop_num_bags == 1 else train_lst[:int(len(train_lst)*prop_num_bags)]
+                    elif val_mode == True:
+                        self.name_lst = val_lst if prop_num_bags == 1 else val_lst[:int(len(val_lst)*prop_num_bags)]
+
+                    if "splitting" not in h5:
+                        print("Creating splitting table...")
+                        all_cases = train_lst + val_lst
+                        split_info = []
+                        for case in all_cases:
+                            split = "train" if case in train_lst else "val"
+
+                            if case.startswith("normal"):
+                                cls = "normal"
+                                label = "normal"
+                            elif case in micro_tumors:
+                                cls = "micro"
+                                label = "tumor"
+                            elif case in macro_tumors:
+                                cls = "macro"
+                                label = "tumor"
+                            else:
+                                raise ValueError(f"Unknown case type for: {case}")
+
+                            split_info.append({"case_name": case, "split": split, "class": cls, "label": label})
+
+                        split_df = pd.DataFrame(split_info).sort_values(by="case_name")
+
+                        csv_data = split_df.to_csv(index=False).encode("utf-8")
+                        h5.create_dataset("splitting", data=csv_data)
+                        print("Splitting table saved successfully.")
+                    else:
+                        print("Splitting table already exists in the HDF5 file.")
+                    h5.close()
+
+                elif self.mode == 'test':
+                    self.name_lst = list(h5["test"].keys())
              
     def __len__(self):
         return len(self.name_lst)
@@ -177,6 +219,8 @@ class HistoDataset(data_utils.Dataset):
         dict['original_shape'] = original_shape
         dict['case_name'] = case_name
         return dict
+    
+    
     
     # def get_ori_resolution(
     #         self,

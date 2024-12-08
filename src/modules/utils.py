@@ -2,6 +2,7 @@ import torch as th
 import os
 from PIL import Image
 import numpy as np
+import pandas as pd
 
 def move_to_device(nested_list, device):
     """
@@ -109,17 +110,36 @@ def cut_off(
         return y_instance_pred
 
 
-
-
+def create_metadata(
+        normal_train,
+        micro_train,
+        macro_train, 
+        normal_val,
+        micro_val,
+        macro_val,
+        slide_metadata,
+        path_to_save,
+        
+):
     
-    # top_values, top_indices = th.topk(y_instance_pred, top_k)
-    # cumulative_sum = th.sum(top_values)
-    # if cumulative_sum*100 > threshold:
-    #     modified_array = y_instance_pred.clone()
-    #     modified_array[top_indices] = 0.0
-    #     print(f"Attention Map cut off at {top_k} positions")
-    # else:
-    #     modified_array = y_instance_pred
-    #     print(f"Attention Map not cut off at {top_k} positions")
-    # return modified_array
+    train_data = pd.DataFrame({
+        'slide_id': normal_train + micro_train + macro_train,
+        'split': ['train'] * (len(normal_train) + len(micro_train) + len(macro_train)),
+        'class': ['normal'] * len(normal_train) + ['micro'] * len(micro_train) + ['macro'] * len(macro_train)
+    })
+
+    val_data = pd.DataFrame({
+        'slide_id': normal_val + micro_val + macro_val,
+        'split': ['val'] * (len(normal_val) + len(micro_val) + len(macro_val)),
+        'class': ['normal'] * len(normal_val) + ['micro'] * len(micro_val) + ['macro'] * len(macro_val)
+    })
     
+    combined_data = pd.concat([train_data, val_data], ignore_index=True)
+
+    final_df = combined_data.merge(slide_metadata[['slide_id', 'case_id']], on='slide_id', how='left')
+
+    final_df = final_df.set_index('slide_id').reindex(slide_metadata['slide_id']).reset_index()
+
+    final_df.to_csv(path_to_save, index=False)
+    
+    print(f"Split metadata saved to {path_to_save}")
