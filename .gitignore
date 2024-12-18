@@ -10,3 +10,5 @@ MNIST
 logs/**/*.png
 *.yaml
 wandb
+*.h5
+*.txt

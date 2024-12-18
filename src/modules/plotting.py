@@ -1,9 +1,13 @@
 import os
 import numpy as np
+from PIL import Image
 import wandb
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from src.modules.utils import get_tumor_annotation, logits_to_label, cut_off
+from matplotlib.colors import LogNorm
 
 def visualize_gtbags(
     bags: np.ndarray,
@@ -210,7 +214,184 @@ def visualize_auc_results(
     fig.savefig(f"{save_path}/auc_results_{mean_bag_size}.{file_format}", bbox_inches='tight')
 
 
+def visualize_histo_att(
+        model, 
+        batch: tuple,
+        misc_save_path: str,
+        global_step: int,
+        mode: str,
+        vis_mode: str,
+):
+    features, label, cls, dict = batch
+    features = features.squeeze(0)
+
+    y_bag_pred, y_instance_pred = model(features)
+    if y_instance_pred is None:
+        return
+    else:
+        y_instance_pred = cut_off(y_instance_pred, top_k=10, threshold=0.9, vis_mode=vis_mode)
+        y_instance_pred = y_instance_pred.cpu().detach().numpy()
+        positions = [dict[i][1] for i in range(len(dict)-2)]
+        patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
+        original_shape = dict['original_shape']
+        
+        figsize = ((original_shape[0].item() / 100), (original_shape[1].item() / 100))
+
+        fig, ax = plt.subplots(figsize=figsize)
+        fig.patch.set_facecolor("black")
+
+        ax.set_xlim(0, original_shape[0].item())
+        ax.set_ylim(0, original_shape[1].item())
+        ax.invert_yaxis()
+        max_ak = max(y_instance_pred)
+        min_ak = min(y_instance_pred)
+        log_norm = LogNorm(vmin=y_instance_pred.min(), vmax=y_instance_pred.max())
+
+        for i, position in enumerate(positions):
+            x, y = position
+            x = x.item()/16
+            y = y.item()/16
+
+            patch_width = patch_size_abs[i].item()/16
+            patch_height = patch_size_abs[i].item()/16
+
+            value = y_instance_pred[i]
+            if vis_mode == "percentile" or vis_mode == "raw":
+                value = (value - min_ak) / (max_ak - min_ak)
+            if vis_mode == "log":
+                value = log_norm(value)
+            color = plt.cm.Reds(value)
+            rect = patches.Rectangle((x, y), patch_width, patch_height, linewidth=0, edgecolor=None, facecolor=color)
+            ax.add_patch(rect)
+
+        ax.axis('off')
+        if misc_save_path:
+            batch_name = dict['case_name'][0]
+            batch_dir = os.path.join(misc_save_path, batch_name)
+            if not os.path.exists(batch_dir):
+                os.makedirs(batch_dir)
+
+            image_save_path = f"{batch_dir}/{mode}_aks_{logits_to_label(label)}_{global_step+1}_{vis_mode}.png"
+            plt.savefig(image_save_path, dpi=100, bbox_inches='tight', pad_inches=0)
+
+            img = Image.open(image_save_path)
+            img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.Resampling.LANCZOS)
+            img.save(image_save_path)
+        plt.close()
+
+def visualize_histo_patches(
+        model,
+        batch: tuple,
+        misc_save_path: str
+):
+    features, label, cls, dict = batch
+    positions = [dict[i][1] for i in range(len(dict)-2)]
+    patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
+    original_shape = dict['original_shape']
+
+    figsize = ((original_shape[0].item() / 100), (original_shape[1].item() / 100))
+
+    fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor("black")
+    ax.set_xlim(0, original_shape[0].item())
+    ax.set_ylim(0, original_shape[1].item())
+    ax.invert_yaxis()
+
+    for i, position in enumerate(positions):
+        patch_path = os.path.join("/home/space/datasets/camelyon16/patches/20x", dict['case_name'][0], f"{dict[i][0].item()}.jpg")
+        if os.path.exists(patch_path):
+            patch = Image.open(patch_path)
+            patch_array = np.asarray(patch)
+            patch_array = np.flipud(patch_array) 
+            x, y = position
+            x = x.item()/16
+            y = y.item()/16
+
+            patch_width = patch_size_abs[i].item()/16
+            patch_height = patch_size_abs[i].item()/16
+            ax.imshow(patch_array, extent=(x, (x + patch_width), y, (y + patch_height)))
+            
+    
+    ax.axis('off')
+    if misc_save_path:
+        batch_name = dict['case_name'][0]
+        batch_dir = os.path.join(misc_save_path, batch_name)
+        if not os.path.exists(batch_dir):
+            os.makedirs(batch_dir)
+        image_save_path = f"{batch_dir}/all_cell_patches.png"
+        if not os.path.exists(image_save_path):
+            plt.savefig(image_save_path, dpi=100, bbox_inches='tight', pad_inches=0)
+            img = Image.open(image_save_path)
+            img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.ANTIALIAS)
+            img.save(image_save_path)
+    plt.close()
+
+
+def visualize_histo_gt(
+        model,
+        batch: tuple,
+        misc_save_path: str
+):
+    features, label, cls, dict = batch
+    positions = [dict[i][1] for i in range(len(dict)-2)]
+    patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
+    original_shape = dict['original_shape']
+    annotation_array = get_tumor_annotation(dict['case_name'][0])
+
+    figsize = ((original_shape[0].item() / 100), (original_shape[1].item() / 100))
+
+    fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor("black")
+    ax.set_xlim(0, original_shape[0].item())
+    ax.set_ylim(0, original_shape[1].item())
+    ax.invert_yaxis()
+
+    for i, position in enumerate(positions):
+        patch_path = os.path.join("/home/space/datasets/camelyon16/patches/20x", dict['case_name'][0], f"{dict[i][0].item()}.jpg")
+        if os.path.exists(patch_path):
+            patch = Image.open(patch_path)
+            patch_array = np.asarray(patch)
+            patch_array = np.flipud(patch_array) 
+            x, y = position
+            x = x.item()/16
+            y = y.item()/16
+
+            patch_width = patch_size_abs[i].item()/16
+            patch_height = patch_size_abs[i].item()/16
+
+            annotation_region = annotation_array[
+                int(y):int(y + patch_height),
+                int(x):int(x + patch_width),
+                :
+            ]
+            is_red = np.any(
+                (annotation_region[:, :, 0] == 255) & 
+                (annotation_region[:, :, 1] == 0) & 
+                (annotation_region[:, :, 2] == 0)   
+            )
+            if is_red:
+                ax.imshow(patch_array, extent=(x, (x + patch_width), y, (y + patch_height)))
+
+
+    ax.axis('off')
+    if misc_save_path:
+        batch_name = dict['case_name'][0]
+        batch_dir = os.path.join(misc_save_path, batch_name)
+        if not os.path.exists(batch_dir):
+            os.makedirs(batch_dir)
+        image_save_path = f"{batch_dir}/gt_tumor_patches.png"
+        if not os.path.exists(image_save_path):
+            plt.savefig(image_save_path, dpi=100, bbox_inches='tight', pad_inches=0)
+            img = Image.open(image_save_path)
+            img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.ANTIALIAS)
+            img.save(image_save_path)
+    plt.close()
+    
+    
+
+
 if __name__ == "__main__":
-    visualize_auc_results(10, 2, "./logs", False, True)
-    visualize_auc_results(50, 10, "./logs", False, True)
-    visualize_auc_results(100, 20, "./logs", False, True)
+    print("Visualizing AUC results...")
+    #visualize_auc_results(10, 2, "./logs", False, True)
+    #visualize_auc_results(50, 10, "./logs", False, True)
+    #visualize_auc_results(100, 20, "./logs", False, True)
