@@ -11,3 +11,5 @@ tqdm
 torchinfo
 pytorch-ignite
 scikit-learn
+Pillow
+h5py

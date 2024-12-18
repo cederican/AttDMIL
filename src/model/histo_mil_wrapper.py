@@ -109,8 +109,6 @@ class HistoMILWrapper(ModelWrapper):
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "log")
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "percentile")
 
-        
-    
     def _error(
             self,
             model: MILModel,
@@ -140,6 +138,7 @@ class HistoMILWrapper(ModelWrapper):
         cls_loss = th.tensor(0)
 
         # add attention weight entropy loss
+        # c = 0.01
         # attention_entropy_loss = -th.mean(th.sum(y_instance_pred * th.log(y_instance_pred + 1e-6), dim=0))
         # cls_loss = th.nn.BCELoss()(y_bag_pred, y_bag_true)
         # loss = cls_loss + c * attention_entropy_loss
@@ -156,6 +155,8 @@ class HistoMILWrapper(ModelWrapper):
 
 if __name__ == "__main__":
 
+    pml_cluster = False
+
     train_config = MILModelConfig(
         mode='embedding',
         epochs=5,
@@ -163,12 +164,14 @@ if __name__ == "__main__":
         img_size=(1, 28, 28),
         dataset_config=HistoBagsConfig(
             seed=1,
-            num_bags=5,
+            prop_num_bags=5,
             h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
             color_normalize=False,
             datatype="features",
             mode="train",
+            val_mode=False,
             split=0.8,
+            pml_cluster=pml_cluster
         ),
         mil_pooling_config=MILPoolingConfig(
             pooling_type='attention',

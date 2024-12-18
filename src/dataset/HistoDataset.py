@@ -9,8 +9,10 @@ from PIL import Image
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
+
 from src.modules.config import HistoBagsConfig
 from src.modules.utils import label_to_logits, cls_to_logits, create_metadata
+
 
 class HistoDataset(data_utils.Dataset):
     def __init__(
@@ -24,6 +26,7 @@ class HistoDataset(data_utils.Dataset):
         mode: str,
         val_mode: bool,
         split: float,
+        pml_cluster: bool,
     ):
         super().__init__()
         self.h5_path = h5_path
@@ -32,14 +35,22 @@ class HistoDataset(data_utils.Dataset):
         self.datatype = datatype
 
         metadata_path_cluster = "/home/space/datasets/camelyon16/metadata/v001/slide_metadata.csv"
-        modif_metadata_path_cluster = "/home/pml06/dev/attdmil/logs/histo/metadata/split_metadata.csv"
+        case_metadata_path_cluster = "/home/space/datasets/camelyon16/metadata/v001/case_metadata.csv"
 
-        if os.path.isfile(modif_metadata_path_cluster):
-            print(f"Loading modified metadata from {modif_metadata_path_cluster}")
-            slide_metadata = pd.read_csv(modif_metadata_path_cluster)
+        self.modif_metadata_path_cluster = "/home/pml06/dev/attdmil/HistoData/metadata/split_metadata.csv"
+
+        self.feature_path_cluster = "/mnt/datasets/camelyon16/features/20x/ctranspath_pt/"  if pml_cluster else "/home/space/datasets/camelyon16/features/20x/ctranspath_pt/"
+        self.patch_metadata_path_cluster = "/mnt/datasets/camelyon16/patches/20x/"  if pml_cluster else "/home/space/datasets/camelyon16/patches/20x/"
+        self.annotations_path = "/mnt/datasets/camelyon16/annotations" if pml_cluster else "/home/space/datasets/camelyon16/annotations"
+
+        # main function to load the data from our .csv file
+        if os.path.isfile(self.modif_metadata_path_cluster):
+            print(f"Loading modified metadata from {self.modif_metadata_path_cluster}")
+            slide_metadata = pd.read_csv(self.modif_metadata_path_cluster)
 
             train_lst = slide_metadata[slide_metadata['split'] == 'train']['slide_id'].tolist()
             val_lst = slide_metadata[slide_metadata['split'] == 'val']['slide_id'].tolist()
+            test_lst = slide_metadata[slide_metadata['split'] == 'test']['slide_id'].tolist()
 
             random.seed(seed)
             random.shuffle(train_lst)
@@ -50,8 +61,9 @@ class HistoDataset(data_utils.Dataset):
             elif val_mode == True and mode == 'train':
                 self.name_lst = val_lst if prop_num_bags == 1 else val_lst[:int(len(val_lst)*prop_num_bags)]
             elif mode == 'test':
-                self.name_lst = list(h5["test"].keys())
+                self.name_lst = test_lst if prop_num_bags == 1 else test_lst[:int(len(test_lst)*prop_num_bags)]
 
+        # old function with .h5 file was too slow
         else:
 
             with h5py.File(self.h5_path, "r+") as h5:
@@ -61,6 +73,7 @@ class HistoDataset(data_utils.Dataset):
                     print(f"Apply train-val split with split ratio: {split}")
 
                     slide_metadata = pd.read_csv(metadata_path_cluster)
+                    case_metadata = pd.read_csv(case_metadata_path_cluster)
 
                     # Check for cases/patients with multiple slides
                     grouped_cases = slide_metadata.groupby('case_id')['slide_id'].apply(list).to_dict()
@@ -106,9 +119,11 @@ class HistoDataset(data_utils.Dataset):
                     train_lst = normal_train + micro_train + macro_train
                     val_lst = normal_val + micro_val + macro_val
 
+                    test_lst = list(h5["test"].keys())
+
                     # create a .csv with the fixed split for train and val
-                    if not os.path.isfile(modif_metadata_path_cluster):
-                        create_metadata(normal_train ,micro_train,macro_train, normal_val,micro_val,macro_val, slide_metadata, modif_metadata_path_cluster)
+                    if not os.path.isfile(self.modif_metadata_path_cluster):
+                        create_metadata(normal_train ,micro_train,macro_train, normal_val,micro_val,macro_val, test_lst, slide_metadata, case_metadata, modif_metadata_path_cluster)
 
                     random.seed(seed)
                     random.shuffle(train_lst)
@@ -158,6 +173,8 @@ class HistoDataset(data_utils.Dataset):
     def __getitem__(self, idx):
         if self.datatype == "features":
             return self._get_features(idx)
+        elif self.datatype == "features_for_vis":
+            return self._get_features_for_vis(idx)
         elif self.datatype == "patches":
             return self._get_patches(idx)
         elif self.datatype == "coordinates":
@@ -179,32 +196,60 @@ class HistoDataset(data_utils.Dataset):
 
         return coordinates
 
-
     def _get_patches(self, idx):
         pass
-
+    
     def _get_features(self, idx):
         
         case_name = self.name_lst[idx]
-        self.h5 = h5py.File(self.h5_path, "r")
-        features = self.h5[self.mode][case_name]["features"]['feature_matrix'][:]
+        feature_path = os.path.join(self.feature_path_cluster, f"{case_name}.pt")
+        features = th.load(feature_path, weights_only=True)
 
-        label = self.h5[self.mode][case_name].attrs["label"]
+
+        slide_metadata = pd.read_csv(self.modif_metadata_path_cluster)
+        label = slide_metadata[slide_metadata['slide_id'] == case_name].iloc[0]['label']
         label = label_to_logits(label)
 
-        cls = self.h5[self.mode][case_name].attrs["class"]
+        cls = slide_metadata[slide_metadata['slide_id'] == case_name].iloc[0]['class']
         cls = cls_to_logits(cls)
 
-        patch_id_lst = list(self.h5[self.mode][case_name]['metadata']['patch_id'][:])
-        position_abs_lst = list(self.h5[self.mode][case_name]['metadata']['position_abs'][:])
-        position_abs_lst = [ast.literal_eval(pos.decode('utf-8')) for pos in position_abs_lst]
-        patch_size_abs_lst = list(self.h5[self.mode][case_name]['metadata']['patch_size_abs'][:])
-        original_shape = tuple(self.h5[self.mode][case_name]["annotation"]['resolution'][:])
+        patch_ordering_dict = {}
+
+        return features.squeeze(1), label, cls, patch_ordering_dict
+    
+    def _get_features_for_vis(self, idx):
+        
+        case_name = self.name_lst[idx]
+        feature_path = os.path.join(self.feature_path_cluster, f"{case_name}.pt")
+        features = th.load(feature_path, weights_only=True)
+
+
+        slide_metadata = pd.read_csv(self.modif_metadata_path_cluster)
+        label = slide_metadata[slide_metadata['slide_id'] == case_name].iloc[0]['label']
+        label = label_to_logits(label)
+
+        cls = slide_metadata[slide_metadata['slide_id'] == case_name].iloc[0]['class']
+        cls = cls_to_logits(cls)
+
+
+        patch_meta_path = os.path.join(self.patch_metadata_path_cluster, case_name, "metadata", "df.csv")
+        patch_meta_df = pd.read_csv(patch_meta_path)
+
+        patch_id_lst = list(patch_meta_df["patch_id"])
+        position_abs_lst = list(patch_meta_df["position_abs"])
+        position_abs_lst = [ast.literal_eval(pos) for pos in position_abs_lst]
+        patch_size_abs_lst = list(patch_meta_df["patch_size_abs"])
+
+        annotations_path = os.path.join(self.annotations_path, f"{case_name}.png")
+        if os.path.exists(annotations_path):
+            annotations = Image.open(annotations_path)
+            width, height = annotations.size
+            original_shape = (width, height)
+
         patch_ordering_dict = self.patch_ordering(patch_id_lst, position_abs_lst, patch_size_abs_lst, original_shape, case_name)
 
-        self.h5.close()
-        
-        return th.tensor(features, dtype=th.float32).squeeze(1), label, cls, patch_ordering_dict
+        return features.squeeze(1), label, cls, patch_ordering_dict
+    
     
         
     def patch_ordering(
@@ -220,34 +265,18 @@ class HistoDataset(data_utils.Dataset):
         dict['case_name'] = case_name
         return dict
     
-    
-    
-    # def get_ori_resolution(
-    #         self,
-    #         case_name: str,
-    # ):
-    #     annotations_path = "/home/space/datasets/camelyon16/annotations"
-    #     annotations_path = f"{annotations_path}/{case_name}.png"
-    #     if not os.path.isfile(annotations_path):
-    #         print(f"Image {case_name} not found in {annotations_path}")
-    #         return None
-    #     with Image.open(annotations_path) as img:
-    #         width, height = img.size
-    #     return (width, height)
-
-        
-    
 
 if __name__ == "__main__":
     train_dataset = HistoDataset(
         seed=1,
-        prop_num_bags=0.3,
+        prop_num_bags=0.3, # 1.0 for all bags float for proportion of bags
         h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
         color_normalize=False,
         datatype="features",
         mode="train",
         val_mode=False,
         split=0.8,
+        pml_cluster=False,
     )
     val_dataset = HistoDataset(
         seed=1,
@@ -258,6 +287,7 @@ if __name__ == "__main__":
         mode="train",
         val_mode=True,
         split=0.8,
+        pml_cluster=False,
     )
 
     train_data = train_dataset[0]
@@ -265,28 +295,28 @@ if __name__ == "__main__":
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, 
-        batch_size=1,      # Define batch size
-        shuffle=True,      # Shuffle data during loading
-        num_workers=0,     # Number of worker threads for loading data
-        pin_memory=True    # Optimize for GPU if available
+        batch_size=1,      
+        shuffle=True,     
+        num_workers=0,    
+        pin_memory=True   
     )
 
     val_data_loader = data_utils.DataLoader(
         val_dataset, 
-        batch_size=1,      # Define batch size
-        shuffle=True,      # Shuffle data during loading
-        num_workers=0,     # Number of worker threads for loading data
-        pin_memory=True    # Optimize for GPU if available
+        batch_size=1,     
+        shuffle=True,     
+        num_workers=0,    
+        pin_memory=True   
     )
 
     for batch_idx, (features, labels, classes, dict) in enumerate(train_data_loader):
         print(f"Batch {batch_idx}:")
-        print(f"Features shape: {features.shape}")  # Check tensor dimensions
-        print(f"Labels: {labels}")                 # Print labels
-        print(f"Classes: {classes}")               # Print classes
-        print(f"Dict: {dict}")                     # Print patch ordering
+        print(f"Features shape: {features.shape}")  
+        print(f"Labels: {labels}")                      
+        print(f"Classes: {classes}")                   
+        #print(f"Dict: {dict}")                         
     
-        if batch_idx == 1:
+        if batch_idx == 10:
             break
     
     for batch_idx, (features, labels, classes, dict) in enumerate(val_data_loader):
@@ -294,7 +324,7 @@ if __name__ == "__main__":
         print(f"Features shape: {features.shape}")
         print(f"Labels: {labels}")
         print(f"Classes: {classes}")
-        print(f"Dict: {dict}")
+        #print(f"Dict: {dict}")
 
-        if batch_idx == 1:
+        if batch_idx == 10:
             break

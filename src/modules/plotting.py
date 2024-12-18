@@ -230,7 +230,7 @@ def visualize_histo_att(
         return
     else:
         y_instance_pred = cut_off(y_instance_pred, top_k=10, threshold=0.9, vis_mode=vis_mode)
-        y_instance_pred = y_instance_pred.detach().numpy()
+        y_instance_pred = y_instance_pred.cpu().detach().numpy()
         positions = [dict[i][1] for i in range(len(dict)-2)]
         patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
         original_shape = dict['original_shape']
@@ -275,7 +275,7 @@ def visualize_histo_att(
             plt.savefig(image_save_path, dpi=100, bbox_inches='tight', pad_inches=0)
 
             img = Image.open(image_save_path)
-            img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.ANTIALIAS)
+            img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.Resampling.LANCZOS)
             img.save(image_save_path)
         plt.close()
 
@@ -310,12 +310,6 @@ def visualize_histo_patches(
             patch_width = patch_size_abs[i].item()/16
             patch_height = patch_size_abs[i].item()/16
             ax.imshow(patch_array, extent=(x, (x + patch_width), y, (y + patch_height)))
-
-            #value = y_instance_pred[i]
-            #value = (value - min_ak) / (max_ak - min_ak)
-            #color = plt.cm.Reds(value)
-            #rect = patches.Rectangle((x.item()/16, y.item()/16), patch_size_abs[i].item()/16, patch_size_abs[i].item()/16, linewidth=0, edgecolor=None, facecolor=color)
-            #ax.add_patch(rect)
             
     
     ax.axis('off')

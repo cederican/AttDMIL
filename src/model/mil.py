@@ -58,7 +58,7 @@ class MILPooling(nn.Module):
         elif self.pooling_type == 'gated_attention':
             V = self.attention_V(x)                     # (num_instances, feature_dim) -> (num_instances, attspace_dim)
             U = self.attention_U(x)                     # (num_instances, feature_dim) -> (num_instances, attspace_dim)   
-            A = self.attention_w(V * U).squeeze(1)                 # (num_instances, attspace_dim) -> (num_instances, ATTENTION_BRANCHES)
+            A = self.attention_w(V * U).squeeze(1)      # (num_instances, attspace_dim) -> (num_instances, ATTENTION_BRANCHES)
             A = torch.softmax(A, dim=0)                 # (num_instances, ATTENTION_BRANCHES) -> (num_instances, ATTENTION_BRANCHES)
             x = A.T @ x                                 # (ATTENTION_BRANCHES, num_instances) @ (num_instances, feature_dim) -> (ATTENTION_BRANCHES, feature_dim)
             return x, A                                 # return (ATTENTION_BRANCHES, feature_dim), (num_instances, ATTENTION_BRANCHES)
@@ -140,18 +140,22 @@ if __name__ == "__main__":
     """
     test just one model approach
     """
+    pml_cluster = False
+
     train_config = MILModelConfig(
         mode='embedding',
         batch_size=1,
         img_size=(1, 28, 28),
         dataset_config=HistoBagsConfig(
             seed=1,
-            num_bags=5,
+            prop_num_bags=1,
             h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
             color_normalize=False,
             datatype="features",
             mode="test",
+            val_mode=False,
             split=0.8,
+            pml_cluster=pml_cluster,
         ),
         mil_pooling_config=MILPoolingConfig(
             pooling_type='attention',
@@ -167,12 +171,12 @@ if __name__ == "__main__":
         shuffle=False
     )
     model = MILModel(mil_model_config=train_config)
-    #summary(model,
-    #        verbose=1,
-    #        input_data={"x": torch.rand(1000, 768)},
-    #)
+    summary(model,
+           verbose=1,
+           input_data={"x": torch.rand(1000, 768)},
+    )
     for batch_idx, (features, label, cls, dict) in enumerate(train_data_loader):
-            #print(f"Batch {batch_idx}:")
+            print(f"Batch {batch_idx}:")
             #print(f"Features shape: {features.shape}")  
             #print(f"Labels: {label}")                 
             #print(f"Classes: {cls}")

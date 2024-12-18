@@ -19,6 +19,7 @@ class HistoBagsConfig(SimpleNamespace):
     datatype: str
     mode: str
     split: float
+    pml_cluster: bool
 
 
 class MILPoolingConfig(SimpleNamespace):

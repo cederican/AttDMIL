@@ -69,7 +69,7 @@ class AbstractLogger(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def log_AUC(self, misc_save_path, value):
+    def log_AUC(self, misc_save_path, value, name):
         raise NotImplementedError
 
     @abstractmethod
@@ -87,8 +87,8 @@ class WandbLogger(AbstractLogger):
     def log_scalar_test(self, tag, scalar_value):
         self.wandb.log({tag: scalar_value})
     
-    def log_AUC(self, misc_save_path, value):
-        file_path = os.path.join(misc_save_path, 'metric_5runs.txt')
+    def log_AUC(self, misc_save_path, value, name):
+        file_path = os.path.join(misc_save_path, f'{name}_5runs.txt')
 
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:

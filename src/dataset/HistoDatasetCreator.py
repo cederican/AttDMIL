@@ -132,14 +132,14 @@ class HistoDatasetCreator:
                         patch_group.attrs[key] = value
                 
                 # add precomputed feature matrix
-                feature_path = os.path.join(self.feature_path, f"{case}.pt")
-                if os.path.exists(feature_path):
-                    print(f"Loading feature matrix for {case} from {feature_path}")
-                    feature_matrix = torch.load(feature_path, weights_only=True).numpy()
+                # feature_path = os.path.join(self.feature_path, f"{case}.pt")
+                # if os.path.exists(feature_path):
+                #     print(f"Loading feature matrix for {case} from {feature_path}")
+                #     feature_matrix = torch.load(feature_path, weights_only=True).numpy()
 
-                    features_group = case_group.create_group("features")
-                    features_group.create_dataset("feature_matrix", data=feature_matrix, compression='gzip')
-                    print(f"{bcolors.OKGREEN}Features for {case} saved.{bcolors.ENDC}")
+                #     features_group = case_group.create_group("features")
+                #     features_group.create_dataset("feature_matrix", data=feature_matrix, compression='gzip')
+                #     print(f"{bcolors.OKGREEN}Features for {case} saved.{bcolors.ENDC}")
                 
                 #add annotations slide level
                 annotations_path = os.path.join(self.annotations_path, f"{case}.png")
@@ -184,7 +184,7 @@ class HistoDatasetCreator:
 if __name__ == "__main__":
     input_path = "/home/space/datasets/camelyon16/patches/20x"
     output_path = "/home/pml06/dev/attdmil/HistoData/"
-    dataset_name = "camelyon16_x.h5"
+    dataset_name = "camelyon16_meta.h5"
     slide_metadata_path = "/home/space/datasets/camelyon16/metadata/v001/slide_metadata.csv"
     feature_path = "/home/space/datasets/camelyon16/features/20x/ctranspath_pt"
     annotations_path = "/home/space/datasets/camelyon16/annotations"

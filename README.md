@@ -27,10 +27,10 @@
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="./media/att_bag_Positive_1.png" alt="Logo" width="600" height="450">
+    <img src="./media/all_patches_test_001.png" alt="Logo" width="600" height="600">
   </a>
 
-  <h3 align="center">Attention-based Deep Multiple Instance Learning <br> & <br> MNIST-Bags</h3>
+  <h3 align="center">Attention-based Deep Multiple Instance Learning <br> --------------------------- <br> Histopathology-Bags <br> --------------------------- <br> MNIST-Bags </h3>
 
   <p align="center">
     <br />
@@ -51,15 +51,23 @@
       </ul>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="#getting-started-with-histopathology">Getting Started with Camelyon16 Dataset (Histopathology)</a>
       <ul>
         <li><a href="#installation">Installation</a></li>
-        <li><a href="#dataset-curation">Dataset curation</a></li>
-        <li><a href="#model-training">Model Training</a></li>
-        <li><a href="#visualization">Visualization</a></li>
+        <li><a href="#camelyon16-dataset-curation">Camelyon16 Dataset curation</a></li>
+        <li><a href="#camelyon16-model-training">Camelyon16 Model Training</a></li>
+        <li><a href="#camelyon16-visualization">Camelyon16 Visualization</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#getting-started-with-mnist-dataset">Getting Started with MNIST Dataset</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#mnist-dataset-curation">MNIST Dataset curation</a></li>
+        <li><a href="#mnist-model-training">MNIST Model Training</a></li>
+        <li><a href="#mnist-visualization">MNIST Visualization</a></li>
+      </ul>
+    </li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -90,7 +98,7 @@ This repository serves as a comprehensive resource for documenting our progress,
 
 
 <!-- GETTING STARTED -->
-## Getting Started
+## Getting Started with Histopathology
 
 To get a local copy and replicate our experiments follow these simple steps. 
 
@@ -101,14 +109,97 @@ To get a local copy and replicate our experiments follow these simple steps.
    git clone https://git.tu-berlin.de/cederic/attdmil.git
    ```
 
-### Dataset curation
+### Camelyon16 Dataset curation
+
+* to inspect the MNIST-Bags dataset run 
+   ```sh
+   python ./dev/attdmil/src/dataset/HistoDataset.py
+   ```
+
+### Camelyon16 Model Training
+
+* for training just run
+   ```sh
+   python ./dev/attdmil/src/model/histo_train.py
+   ```
+
+* create a Weights and Biases account to be able to execute the implemented grid search properly
+   ```sh
+   https://wandb.ai/site/
+   ```
+
+* you can define a specific train config in train.py
+   ```sh
+   sweep_config = {
+        'method': 'grid',
+        'metric': {
+            'name': 'val/auc',
+            'goal': 'maximize' 
+            },
+        'parameters': {
+            'lr': {
+                'values': [0.005]     # [0.0005, 0.0001, 0.00005]
+            },
+            'weight_decay': {
+                'values': [1e-3]      # [1e-4, 1e-5], 1e-3 keep
+            },
+            'num_bags': {
+                'values': [1]         # proportion 1 for all bags float for less
+            },
+            'mode': {
+                'values': ['embedding', 'instance']     # ['embedding', 'instance']
+            },
+            'pooling_type': {
+                'values': ['attention', 'gated_attention', 'max', 'mean']       # ['max', 'mean', 'attention', 'gated_attention']
+            },
+            'attspace_dim': {
+                'values': [256]       # [128, 256, 512]
+            },
+        }
+    }
+   ```
+
+### Camelyon16 Visualization
+
+* for testing just run 
+   ```sh
+   python ./dev/attdmil/src/model/histo_test.py
+   ```
+
+* change the "ckpt_save_path" to the desired run and still adjust the MILModelConfig 
+   ```sh
+  ckpt_save_path = "./logs/histo_final/1/embedding_poolattention/checkpoints/best_ep=15_val_loss=0.1159.pt"  
+   ```
+
+* the visualizations of the attention weights are stored in
+   ```sh
+   ./logs/histo_final/1/embedding_poolattention/misc
+   ```
+
+* ![Example Outputs](./media/train_aks_tumor_645_raw.png)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- GETTING STARTED -->
+## Getting Started with MNIST Dataset
+
+To get a local copy and replicate our experiments follow these simple steps. 
+
+### Installation
+
+* clone the repo
+   ```sh
+   git clone https://git.tu-berlin.de/cederic/attdmil.git
+   ```
+
+### MNIST Dataset curation
 
 * to inspect the MNIST-Bags dataset run 
    ```sh
    python ./dev/attdmil/src/dataset/dataset.py
    ```
 
-### Model Training
+### MNIST Model Training
 
 * for training just run
    ```sh
@@ -148,7 +239,7 @@ To get a local copy and replicate our experiments follow these simple steps.
     }
    ```
 
-### Visualization
+### MNIST Visualization
 
 * for testing just run 
    ```sh
@@ -165,18 +256,11 @@ To get a local copy and replicate our experiments follow these simple steps.
    ./logs/local_gpu/new_mu10/embedding_poolattention_mu10_var2_num50/misc
    ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-The model enables you to do Multiple Instance Learning with different approaches. It allows you to do classification on bag lavel. The attention-based mechanisms provide the socalled attention weights which serve as a form of interpretability.
-
-![Example Outputs](./media/att_bag_Positive_1.png)
+* ![Example Outputs](./media/att_bag_Positive_1.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
 
 
 
@@ -209,6 +293,8 @@ Helpful libraries and papers used in the project
 
 * [WandB](https://wandb.ai/site)
 * [Attention-based Deep Multiple Instance Learning Paper](https://arxiv.org/abs/1802.04712)
+* [QuPath](https://qupath.github.io)
+* [Camelyon Dataset](https://camelyon16.grand-challenge.org/Data/)
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

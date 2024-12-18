@@ -15,7 +15,7 @@ from src.modules.logger import load_config
 
 def test():
 
-    ckpt_save_path = "/home/pml06/dev/attdmil/logs/histo/0.3/adim_256_embedding_poolattention_num0.3/checkpoints/best_ep=55_val_loss=0.5053.pt"
+    ckpt_save_path = "/home/pml06/dev/attdmil/logs/histo/1/embedding_poolattention_lr_0.0001_wd_0.001/checkpoints/last.pt"
     base_log_dir = os.path.dirname(os.path.dirname(os.path.dirname(ckpt_save_path)))
     misc_save_path = os.path.join(os.path.dirname(os.path.dirname(ckpt_save_path)), 'misc')
     run_name = os.path.basename(os.path.dirname(os.path.dirname(ckpt_save_path)))
@@ -45,7 +45,6 @@ def test():
         mode="test",
         val_mode=False,
         split=0.8,
-
     )
     test_loader = data_utils.DataLoader(
         HistoDataset(**test_config.test_dataset_config.__dict__),

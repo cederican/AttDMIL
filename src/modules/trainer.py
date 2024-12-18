@@ -39,6 +39,7 @@ class Trainer:
         epochs: int,
         train_loader: DataLoader,
         val_loader: DataLoader,
+        val_vis_loader: DataLoader,
         logger: WandbLogger,
         ckpt_save_path: str,
         ckpt_save_max: int,
@@ -70,9 +71,9 @@ class Trainer:
             self.lr_scheduler.step()
 
             # visualize attention mechanism every epoch
-            if self.val_every is not None and epoch < 10:
-                self.visualize(val_loader, global_step)
-                global_step += 1
+            # if self.val_every is not None and epoch < 8:
+            #     self.visualize(val_vis_loader, global_step)
+            #     global_step += 1
     
             # Validation
             if self.val_every is not None and epoch % self.val_every == 0:
@@ -83,7 +84,6 @@ class Trainer:
                 combined_stop_metric = current_val_loss + current_val_error
 
                 if combined_stop_metric < best_value:
-                    best_auc = current_val_auc
                     best_value = combined_stop_metric
                     no_improvement_count = 0
 
@@ -95,7 +95,7 @@ class Trainer:
 
                 # Early stopping condition
                 if no_improvement_count >= patience:
-                    self.logger.log_AUC(self.misc_save_path, best_auc)
+                    #self.logger.log_AUC(self.misc_save_path, best_auc)
                     print(f"Early stopping at epoch {epoch} due to no improvement in validation loss for {patience} epochs.")
                     break
                 self.wrapper.val_metrics.reset()
@@ -125,9 +125,7 @@ class Trainer:
             computed_metrics = self.wrapper.test_metrics.compute()
             for name, value in computed_metrics.items():
                 self.logger.log_scalar_test(f"{name}", value)
-                ## verify!!!!!!!!!!!!
-                if name == "test/auc":
-                    self.logger.log_AUC(self.misc_save_path, value)
+                self.logger.log_AUC(self.misc_save_path, value, name.split("/")[-1])
         self.logger.finish()
     
 
@@ -218,11 +216,18 @@ class Trainer:
             loader.set_description(f"Visualization")
             # visualize random batch so that it is not always the same
             #random_visualize_idx = 0 #random.randint(0, 20)
+            micro_counter = 0
+            macro_counter = 0
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
-                if batch_idx == 3:
+                if batch[2].item() == 1 and micro_counter < 2: # micro classes
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
+                    micro_counter += 1
+                elif batch[2].item() == 2 and macro_counter < 2: # macro classes
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
+                    macro_counter += 1
+                if micro_counter == 2 and macro_counter == 2:
                     break
                     
     
@@ -242,7 +247,7 @@ class Trainer:
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-                self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test')
-                if batch_idx == 20:
-                    break
+                if batch[2].item() == 1: # micro classes
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test')
+                
             

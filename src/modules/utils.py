@@ -117,7 +117,9 @@ def create_metadata(
         normal_val,
         micro_val,
         macro_val,
+        test_lst,
         slide_metadata,
+        case_metadata,
         path_to_save,
         
 ):
@@ -125,18 +127,27 @@ def create_metadata(
     train_data = pd.DataFrame({
         'slide_id': normal_train + micro_train + macro_train,
         'split': ['train'] * (len(normal_train) + len(micro_train) + len(macro_train)),
-        'class': ['normal'] * len(normal_train) + ['micro'] * len(micro_train) + ['macro'] * len(macro_train)
+        #'class': ['normal'] * len(normal_train) + ['micro'] * len(micro_train) + ['macro'] * len(macro_train)
     })
 
     val_data = pd.DataFrame({
         'slide_id': normal_val + micro_val + macro_val,
         'split': ['val'] * (len(normal_val) + len(micro_val) + len(macro_val)),
-        'class': ['normal'] * len(normal_val) + ['micro'] * len(micro_val) + ['macro'] * len(macro_val)
+        #'class': ['normal'] * len(normal_val) + ['micro'] * len(micro_val) + ['macro'] * len(macro_val)
+    })
+
+    test_data = pd.DataFrame({
+        'slide_id': test_lst,
+        'split': ['test'] * len(test_lst),
     })
     
-    combined_data = pd.concat([train_data, val_data], ignore_index=True)
+    combined_data = pd.concat([train_data, val_data, test_data], ignore_index=True)
 
     final_df = combined_data.merge(slide_metadata[['slide_id', 'case_id']], on='slide_id', how='left')
+
+    final_df = final_df.merge(case_metadata[['case_id', 'class', 'type']], on='case_id', how='left')
+
+    final_df = final_df.rename(columns={'type': 'label'})
 
     final_df = final_df.set_index('slide_id').reindex(slide_metadata['slide_id']).reset_index()
 
