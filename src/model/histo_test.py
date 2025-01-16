@@ -14,7 +14,7 @@ from src.modules.trainer import Trainer
 from src.modules.logger import load_config
 
 def test():
-
+    pml_cluster = False
     ckpt_save_path = "/home/pml06/dev/attdmil/logs/histo/1/embedding_poolattention_lr_0.0001_wd_0.001/checkpoints/last.pt"
     base_log_dir = os.path.dirname(os.path.dirname(os.path.dirname(ckpt_save_path)))
     misc_save_path = os.path.join(os.path.dirname(os.path.dirname(ckpt_save_path)), 'misc')
@@ -41,10 +41,11 @@ def test():
         prop_num_bags=1,
         h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
         color_normalize=False,
-        datatype="features",
+        datatype="features_for_vis",
         mode="test",
         val_mode=False,
         split=0.8,
+        pml_cluster=pml_cluster,
     )
     test_loader = data_utils.DataLoader(
         HistoDataset(**test_config.test_dataset_config.__dict__),

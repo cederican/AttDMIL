@@ -52,6 +52,10 @@ class HistoDataset(data_utils.Dataset):
             val_lst = slide_metadata[slide_metadata['split'] == 'val']['slide_id'].tolist()
             test_lst = slide_metadata[slide_metadata['split'] == 'test']['slide_id'].tolist()
 
+            print(f"Number of training cases: {len(train_lst)}")
+            print(f"Number of validation cases: {len(val_lst)}")
+            print(f"Number of test cases: {len(test_lst)}")
+
             random.seed(seed)
             random.shuffle(train_lst)
             random.shuffle(val_lst)
@@ -213,7 +217,7 @@ class HistoDataset(data_utils.Dataset):
         cls = slide_metadata[slide_metadata['slide_id'] == case_name].iloc[0]['class']
         cls = cls_to_logits(cls)
 
-        patch_ordering_dict = {}
+        patch_ordering_dict = {'case_name': case_name}
 
         return features.squeeze(1), label, cls, patch_ordering_dict
     

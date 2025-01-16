@@ -15,8 +15,8 @@ from src.modules.trainer import Trainer
 
 def train(config=None):
 
-    base_log_dir = '/home/pml06/dev/attdmil/logs/histo_time'
-    pml_cluster = False
+    base_log_dir = '/home/pml06/dev/attdmil/logs/m3histo'
+    pml_cluster = True
 
     with wandb.init(
             dir=base_log_dir,
@@ -39,7 +39,7 @@ def train(config=None):
         train_config = MILModelConfig(
             device=th.device("cuda" if th.cuda.is_available() else "cpu"),
             mode=config.mode,
-            epochs=100,
+            epochs=20,
             batch_size=1,
             train_dataset_config=HistoBagsConfig(
                 seed=1,
@@ -69,8 +69,8 @@ def train(config=None):
                 h5_path="/home/pml06/dev/attdmil/HistoData/camelyon16.h5",
                 color_normalize=False,
                 datatype="features_for_vis",
-                mode="train",
-                val_mode=True,
+                mode="test",
+                val_mode=False,
                 split=0.8,
                 pml_cluster=pml_cluster
             ),
@@ -103,8 +103,8 @@ def train(config=None):
             gamma=0.1,
             ckpt_save_path=ckpt_save_path,
             misc_save_path=misc_save_path,
-            val_every=5,
-            save_max=5,
+            val_every=1,
+            save_max=2,
             patience=2,
         )
         save_config(base_log_dir, run_name, train_config.__dict__)
@@ -177,13 +177,13 @@ def main_sweep():
                 'values': [1e-3]     # [1e-4, 1e-5], 1e-3 keep
             },
             'num_bags': {
-                'values': [1]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
+                'values': [1.0]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
-                'values': ['embedding', 'instance']     # ['embedding', 'instance']
+                'values': ['embedding']     # ['embedding', 'instance']
             },
             'pooling_type': {
-                'values': ['attention', 'gated_attention', 'max', 'mean']       # ['max', 'mean', 'attention', 'gated_attention']
+                'values': ['attention']       # ['max', 'mean', 'attention', 'gated_attention']
             },
             'attspace_dim': {
                 'values': [256]     # [128, 256, 512]
@@ -195,12 +195,12 @@ def main_sweep():
 # run 5 experiments per sweep configuration
 if __name__ == "__main__":
 
-    for i in range(5):
-        project_name = 'AttDMIL-PML-HISTO'
+    for i in range(1):
+        project_name = 'AttDMIL-PML-HISTO-XAI'
         # Initialize a sweep
         sweep_config = main_sweep()
         sweep_id = wandb.sweep(sweep=sweep_config, project=project_name)
-        wandb.agent(sweep_id, function=train, count=96)
+        wandb.agent(sweep_id, function=train, count=1)
         print(f"{bcolors.OKGREEN}Sweep {i} completed!{bcolors.ENDC}")
         time.sleep(4)
     print("All sweeps completed successfully!")

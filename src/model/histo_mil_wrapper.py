@@ -7,7 +7,7 @@ from src.model.mil import MILModel
 from src.dataset.HistoDataset import HistoDataset
 from src.modules.config import MILModelConfig, HistoBagsConfig, MILPoolingConfig
 from src.modules.metrics import LossErrorAccuracyPrecisionRecallF1Metric
-from src.modules.plotting import visualize_histo_att, visualize_histo_gt, visualize_histo_patches
+from src.modules.plotting import visualize_histo_att, visualize_histo_gt, visualize_histo_patches, visualize_histo_saliency, visualize_histo_shap, visualize_histo_lrp
 
 class HistoMILWrapper(ModelWrapper):
     def __init__(
@@ -29,8 +29,8 @@ class HistoMILWrapper(ModelWrapper):
         """
         Initializes the validation metrics.
         """
-        self.val_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="val", device="cuda")
-        self.test_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="test", device="cuda")
+        self.val_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="val", device="cuda", misc_save_path=self.config.misc_save_path)
+        self.test_metrics = LossErrorAccuracyPrecisionRecallF1Metric(model=self.model, just_features=self.config.just_features, mode="test", device="cuda", misc_save_path=self.config.misc_save_path)
     
     
     def configure_optimizers(self):
@@ -47,13 +47,6 @@ class HistoMILWrapper(ModelWrapper):
             betas=self.config.betas,
             weight_decay=self.config.weight_decay
         )
-        # optional: add lr_scheduler
-        # lr_scheduler = th.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-        #     optimizer,
-        #     T_0=self.config.T_0,
-        #     T_mult=self.config.T_mult,
-        #     eta_min=self.config.eta_min
-        # )
 
         # use lr_scheduler but constant lr
         lr_scheduler = th.optim.lr_scheduler.StepLR(
@@ -90,7 +83,7 @@ class HistoMILWrapper(ModelWrapper):
             batch: tuple,
     ):
         batch[0] = batch[0].squeeze(0)
-        self.test_metrics.update(batch)
+        self.test_metrics.update(batch) 
 
     def visualize_step(
             self,
@@ -101,13 +94,30 @@ class HistoMILWrapper(ModelWrapper):
             mode: str,
     ):
         if mode == "train":
+            print("Visualizing train step")
+            # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "percentile")
+            visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "log")
+            visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "percentile")
+            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "log")
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
-            #visualize_histo_gt(model, batch, misc_save_path)
-            #visualize_histo_patches(model, batch, misc_save_path)
-        elif mode == "test":
+            # visualize_histo_gt(model, batch, misc_save_path)
+            # visualize_histo_patches(model, batch, misc_save_path)
+        # elif mode == "test":
+        else:
+            print("Visualizing test step")
+            # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "percentile")
+            visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "log")
+            visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "percentile")
+            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "log")
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
-            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "log")
-            visualize_histo_att(model, batch, misc_save_path, global_step, mode, "percentile")
+            # visualize_histo_shap(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_att(model, batch, misc_save_path, global_step, mode, "log")
+            # visualize_histo_att(model, batch, misc_save_path, global_step, mode, "percentile")
 
     def _error(
             self,
@@ -128,7 +138,7 @@ class HistoMILWrapper(ModelWrapper):
             features: th.Tensor,
             label: th.Tensor,
     ):
-        c = 0.01
+        att_weight = 0.0001
 
         y_bag_true = label
         y_bag_pred, y_instance_pred = model(features)
@@ -136,13 +146,7 @@ class HistoMILWrapper(ModelWrapper):
         loss = th.nn.BCELoss()(y_bag_pred, y_bag_true)
         attention_entropy_loss = th.tensor(0)
         cls_loss = th.tensor(0)
-
-        # add attention weight entropy loss
-        # c = 0.01
-        # attention_entropy_loss = -th.mean(th.sum(y_instance_pred * th.log(y_instance_pred + 1e-6), dim=0))
-        # cls_loss = th.nn.BCELoss()(y_bag_pred, y_bag_true)
-        # loss = cls_loss + c * attention_entropy_loss
-        return loss, c*attention_entropy_loss, cls_loss
+        return loss, att_weight*attention_entropy_loss, cls_loss
     
     def load_model_checkpoint(self, ckpt_path):
         try:
