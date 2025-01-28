@@ -16,7 +16,7 @@ from src.modules.trainer import Trainer
 def train(config=None):
 
     base_log_dir = '/home/pml06/dev/attdmil/logs/m3histo'
-    pml_cluster = True
+    pml_cluster = False
 
     with wandb.init(
             dir=base_log_dir,
@@ -177,7 +177,7 @@ def main_sweep():
                 'values': [1e-3]     # [1e-4, 1e-5], 1e-3 keep
             },
             'num_bags': {
-                'values': [1.0]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
+                'values': [0.5]     # proportion 1 for all bags float for less     [50, 100, 150, 200, 300, 400, 500]
             },
             'mode': {
                 'values': ['embedding']     # ['embedding', 'instance']

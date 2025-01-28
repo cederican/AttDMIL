@@ -27,7 +27,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="./media/all_patches_test_001.png" alt="Logo" width="600" height="600">
+    <img src="./media/histo.gif" alt="Logo" width="800" height="600">
   </a>
 
   <h3 align="center">Attention-based Deep Multiple Instance Learning <br> --------------------------- <br> Histopathology-Bags <br> --------------------------- <br> MNIST-Bags </h3>
@@ -91,6 +91,8 @@ Exploration and visualization of the dataset to gain insights and validate its c
 Development of initial models, laying the groundwork for the implementation of the attention-based MIL approach.
 4. Baseline Method Evaluation:
 Implementation and assessment of the baseline methods outlined in the paper to establish a reference point for performance comparison.
+5. XAI Method Comparison:
+Implementation of Attention Weights, Shapley Values, Layer-wise Relevance Propagation and SmoothGrad applied to the MIL problem to acquire attribution maps of the instances of a whole slide image.
 
 This repository serves as a comprehensive resource for documenting our progress, including code, results, and insights gained during the replication process.
 
@@ -159,7 +161,7 @@ To get a local copy and replicate our experiments follow these simple steps.
     }
    ```
 
-### Camelyon16 Visualization
+### Camelyon16 XAI Methods
 
 * for testing just run 
    ```sh
@@ -171,12 +173,24 @@ To get a local copy and replicate our experiments follow these simple steps.
   ckpt_save_path = "./logs/histo_final/1/embedding_poolattention/checkpoints/best_ep=15_val_loss=0.1159.pt"  
    ```
 
-* the visualizations of the attention weights are stored in
+* the different XAI methods can be manually chosen in 
    ```sh
-   ./logs/histo_final/1/embedding_poolattention/misc
+   ./src/model/histo_mil_wrapper.py    visualize_step()
    ```
 
-* ![Example Outputs](./media/train_aks_tumor_645_raw.png)
+* the following images show examples of various attribution heatmaps (red: tumorous)
+   ```sh
+   a) Ground truth annotation of tumor region 
+   b) SmoothGrad (log normalized)
+   c) Shapley Values
+   d) Raw Attention weights
+   e) Raw Relevance scores 
+   f) Relevance scores + Attention weights (normalized with LRP+Att. technique)
+   ```
+
+![Example Outputs](./media/shapley.png)
+![Example Outputs](./media/good1.png)
+![Example Outputs](./media/good2.png)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

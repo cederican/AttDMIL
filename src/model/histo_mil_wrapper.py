@@ -7,7 +7,7 @@ from src.model.mil import MILModel
 from src.dataset.HistoDataset import HistoDataset
 from src.modules.config import MILModelConfig, HistoBagsConfig, MILPoolingConfig
 from src.modules.metrics import LossErrorAccuracyPrecisionRecallF1Metric
-from src.modules.plotting import visualize_histo_att, visualize_histo_gt, visualize_histo_patches, visualize_histo_saliency, visualize_histo_shap, visualize_histo_lrp
+from src.modules.plotting import visualize_histo_att, visualize_histo_gt, visualize_histo_patches, visualize_histo_smoothgrad, visualize_histo_shap, visualize_histo_lrp
 
 class HistoMILWrapper(ModelWrapper):
     def __init__(
@@ -98,9 +98,9 @@ class HistoMILWrapper(ModelWrapper):
             # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "raw")
             # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "percentile")
             visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "log")
-            visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "raw")
-            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "percentile")
-            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "log")
+            visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "percentile")
+            # visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "log")
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
             # visualize_histo_gt(model, batch, misc_save_path)
             # visualize_histo_patches(model, batch, misc_save_path)
@@ -110,9 +110,9 @@ class HistoMILWrapper(ModelWrapper):
             # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "raw")
             # visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "percentile")
             visualize_histo_lrp(model, batch, misc_save_path, global_step, mode, "log")
-            visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "raw")
-            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "percentile")
-            # visualize_histo_saliency(model, batch, misc_save_path, global_step, mode, "log")
+            visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "raw")
+            # visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "percentile")
+            # visualize_histo_smoothgrad(model, batch, misc_save_path, global_step, mode, "log")
             visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
             # visualize_histo_shap(model, batch, misc_save_path, global_step, mode, "raw")
             # visualize_histo_att(model, batch, misc_save_path, global_step, mode, "raw")
