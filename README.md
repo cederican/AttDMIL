@@ -291,8 +291,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Contact
 
 * Cederic Aßmann - cederic.assmann@campus.tu-berlin.de
-* Friedrich Hagedorn - hagedorn@campus.tu-berlin.de
-* Jakub Sliwa - j.sliwa@campus.tu-berlin.de
 
 
 
