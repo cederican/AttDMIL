@@ -2,12 +2,15 @@ import os
 import numpy as np
 from PIL import Image
 import wandb
+import random
+import torch as th
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from src.modules.utils import get_tumor_annotation, logits_to_label, cut_off
 from matplotlib.colors import LogNorm
+from tqdm import tqdm
 
 def visualize_gtbags(
     bags: np.ndarray,
@@ -278,6 +281,197 @@ def visualize_histo_att(
             img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.Resampling.LANCZOS)
             img.save(image_save_path)
         plt.close()
+
+def visualize_histo_smoothgrad(
+        model, 
+        batch: tuple,
+        misc_save_path: str,
+        global_step: int,
+        mode: str,
+        vis_mode: str,
+):
+    features, label, cls, dict = batch
+    features = features.squeeze(0)
+    
+    model.eval()
+    contributions_sum = th.zeros_like(features) 
+    for _ in tqdm(range(10)):
+        noise = th.randn_like(features) * 0.1
+        noisy_features = features + noise
+        noisy_features.requires_grad = True
+
+        y_bag_pred, y_instance_pred = model(noisy_features)
+        gradients = th.autograd.grad(
+                outputs=y_bag_pred,
+                inputs=noisy_features,
+                grad_outputs=th.ones_like(y_bag_pred),
+                create_graph=True,
+                retain_graph=True,
+            )[0]
+        contributions_sum += gradients * noisy_features
+    contributions = contributions_sum / 10
+    contributions = th.sum(contributions, dim=1)
+    contributions = contributions.cpu().detach().numpy()
+
+    plot_fn(dict, label, contributions, None, misc_save_path, global_step, mode, vis_mode, 'saliency')
+
+def visualize_histo_shap(
+        model,
+        batch: tuple,
+        misc_save_path: str,
+        global_step: int,
+        mode: str,
+        vis_mode: str,
+):
+    features, label, cls, dict = batch
+    features = features.squeeze(0)
+    num_instances = features.shape[0]
+    shapley_values = th.zeros(num_instances)
+
+    if misc_save_path:
+        batch_name = dict['case_name'][0]
+        batch_dir = os.path.join(misc_save_path, batch_name)
+        if not os.path.exists(batch_dir):
+            os.makedirs(batch_dir)
+        shapley_save_path = f"{batch_dir}/{mode}_shap_{logits_to_label(label)}.pt"
+
+    for _ in tqdm(range(100)):
+        subset_indices = random.sample(range(num_instances), random.randint(1, num_instances - 1))
+        subset = features[subset_indices]
+
+        with th.no_grad():
+            y_bag_pred, y_instance_pred = model(subset)
+        for i in tqdm(range(num_instances)):
+            if i not in subset_indices:
+                subset_i = th.cat([subset, features[i:i+1]], dim=0)
+                with th.no_grad():
+                    y_bag_pred_i, y_instance_pred_i = model(subset_i)
+                marginal_contribution = y_bag_pred_i - y_bag_pred
+                shapley_values[i] += marginal_contribution.item()
+    th.save(shapley_values, shapley_save_path)
+
+    if os.path.exists(shapley_save_path):
+        print(f"Loading shapley values from {batch_name}")
+        shapley_values = th.load(shapley_save_path, weights_only=True)
+    max_shapley = th.max(shapley_values)
+    min_shapley = th.min(shapley_values)
+    shapley_values = 2 * (shapley_values - min_shapley) / (max_shapley - min_shapley) - 1
+    shapley_values = shapley_values.cpu().detach().numpy()
+
+    plot_fn(dict, label, shapley_values, None, misc_save_path, global_step, mode, vis_mode, 'shap')
+
+
+def visualize_histo_lrp(
+        model,
+        batch: tuple,
+        misc_save_path: str,
+        global_step: int,
+        mode: str,
+        vis_mode: str,
+):
+    features, label, cls, dict = batch
+    features = features.squeeze(0)
+
+    model.eval()
+    # do the forward activation
+    print("LRP --- Doing the forward activation...")
+    features_d = features.detach().requires_grad_(True)
+    act_in_pool, act_in_pool_d = features, features_d # activations before pooling
+
+    att_scores = model.pooling.attention(features_d)
+    act_out_pool, _ = model.pooling(features_d)
+
+    act_out_pool_d = act_out_pool.detach().requires_grad_(True)
+    act_in_cls, act_in_cls_d = act_out_pool, act_out_pool_d # activations before classification
+
+    logit = model.bag_classifier(act_in_cls_d)
+    act_out_cls = logit # activations after classification
+
+    # do the lrp backpropagation
+    print("LRP --- Doing the LRP backpropagation...")
+    relevance_logit = logit
+    Relevance = {'out': relevance_logit}
+
+    Relevance['cls'] = lrp(Relevance['out'], act_out_cls, act_in_cls_d)
+    Relevance['pool'] = lrp(Relevance['cls'], act_out_pool, act_in_pool_d)
+    Relevance['pool'] = Relevance['pool'].sum(dim=1, keepdim=True).cpu().detach().numpy() # sum over the feature dim
+
+    att_scores = att_scores.cpu().detach().numpy()
+    max_ak = max(att_scores)
+    min_ak = min(att_scores)
+    att_scores_sign = 2 * (att_scores - min_ak) / (max_ak - min_ak) - 1
+    att_scores_nosign = (att_scores - min_ak) / (max_ak - min_ak)
+
+    plot_fn(dict, label, Relevance['pool'], None, misc_save_path, global_step, mode, vis_mode, 'lrp')
+    plot_fn(dict, label, Relevance['pool'], att_scores_sign, misc_save_path, global_step, mode, vis_mode, 'lrpMULsignatt')
+    plot_fn(dict, label, Relevance['pool'], att_scores_nosign, misc_save_path, global_step, mode, vis_mode, 'lrpMULnosignatt')
+
+
+def lrp(relevance, layer_out_act, layer_in_act):
+    rel_in_graph = (layer_out_act * (relevance / (layer_out_act + 1e-6)).detach()).sum().backward()
+    relevance = layer_in_act * layer_in_act.grad
+    layer_in_act.grad.zero_()
+    return relevance
+
+def plot_fn(
+        dict: dict,
+        label: int,
+        scores: th.Tensor,
+        att_scores: th.Tensor,
+        misc_save_path: str,
+        global_step: int,
+        mode: str,
+        vis_mode: str,
+        xai_mode: str 
+):
+    
+    scores = cut_off(scores, top_k=10, threshold=0.9, vis_mode=vis_mode)
+    positions = [dict[i][1] for i in range(len(dict)-2)]
+    patch_size_abs = [dict[i][2] for i in range(len(dict)-2)]
+    original_shape = dict['original_shape']
+    
+    figsize = ((original_shape[0].item() / 100), (original_shape[1].item() / 100))
+    fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor("black")
+    ax.set_xlim(0, original_shape[0].item())
+    ax.set_ylim(0, original_shape[1].item())
+    ax.invert_yaxis()
+    max_ak = max(scores)
+    min_ak = min(scores)
+    log_norm = LogNorm(vmin=scores.min(), vmax=scores.max())
+    for i, position in enumerate(positions):
+        x, y = position
+        x = x.item()/16
+        y = y.item()/16
+        patch_width = patch_size_abs[i].item()/16
+        patch_height = patch_size_abs[i].item()/16
+        value = scores[i]
+        if vis_mode == "percentile" or vis_mode == "raw":
+            value = 2 * (value - min_ak) / (max_ak - min_ak) - 1
+        if vis_mode == "log":
+            value = log_norm(value)
+        
+        value = value + att_scores[i] if att_scores is not None else value
+        
+        if value >= 0:
+            color = plt.cm.Reds(value)
+        else:
+            color = plt.cm.Blues(-value)
+        rect = patches.Rectangle((x, y), patch_width, patch_height, linewidth=0, edgecolor=None, facecolor=color)
+        ax.add_patch(rect)
+    ax.axis('off')
+    if misc_save_path:
+        batch_name = dict['case_name'][0]
+        batch_dir = os.path.join(misc_save_path, batch_name)
+        if not os.path.exists(batch_dir):
+            os.makedirs(batch_dir)
+        image_save_path = f"{batch_dir}/{mode}_xai_{xai_mode}_{logits_to_label(label)}_{global_step+1}_{vis_mode}.png"
+        plt.savefig(image_save_path, dpi=10, bbox_inches='tight', pad_inches=0) #should be 100
+        img = Image.open(image_save_path)
+        img = img.resize((original_shape[0].item(), original_shape[1].item()), Image.Resampling.LANCZOS)
+        img.save(image_save_path)
+    plt.close()
+    
 
 def visualize_histo_patches(
         model,

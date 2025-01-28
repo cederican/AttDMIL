@@ -3,6 +3,7 @@ import os
 from PIL import Image
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def move_to_device(nested_list, device):
     """
@@ -108,6 +109,34 @@ def cut_off(
         y_instance_pred = (value_clipped - percentile_min) / (percentile_max - percentile_min)
 
         return y_instance_pred
+
+def confusion_matrix(
+        TP,
+        TN,
+        FP,
+        FN,
+        misc_save_path,
+        set,
+):
+    confusion_matrix = np.array([[TP, FN],
+                              [FP, TN]])
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.imshow(confusion_matrix, cmap="Reds")
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(["Predicted Positive", "Predicted Negative"])
+    ax.set_yticklabels(["Actual Positive", "Actual Negative"])
+    ax.set_xlabel("Prediction")
+    ax.set_ylabel("Actual")
+    ax.set_title("Confusion Matrix")
+
+    for i in range(2):
+        for j in range(2):
+            ax.text(j, i, str(confusion_matrix[i, j]),
+                    ha="center", va="center", color="black", fontsize=20)
+    plt.tight_layout()
+    plt.savefig(f"{misc_save_path}/{set}_confusion_matrix.png")
 
 
 def create_metadata(

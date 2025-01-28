@@ -73,6 +73,10 @@ class AbstractLogger(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def log_names(self, misc_save_path, name_lst, name):
+        raise NotImplementedError
+
+    @abstractmethod
     def finish(self):
         pass
 
@@ -113,5 +117,13 @@ class WandbLogger(AbstractLogger):
             with open(file_path, 'a') as file:
                 file.write(f'{value}\n')
     
+    def log_names(self, misc_save_path, name_lst, name):
+        file_path = os.path.join(misc_save_path, f'{name}.txt')
+        with open(file_path, 'w') as file:
+            for item in name_lst:
+                file.write(f"{item}\n")
+        
+        print(f"Names have been written to {file_path}")
+
     def finish(self):
         self.wandb.finish()

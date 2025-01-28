@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from src.model.mnist_mil_wrapper import AttDMILWrapper
 from src.model.histo_mil_wrapper import HistoMILWrapper
 from src.modules.logger import WandbLogger
-from src.modules.utils import move_to_device
+from src.modules.utils import move_to_device, confusion_matrix
 
 
 class Trainer:
@@ -71,9 +71,9 @@ class Trainer:
             self.lr_scheduler.step()
 
             # visualize attention mechanism every epoch
-            # if self.val_every is not None and epoch < 8:
-            #     self.visualize(val_vis_loader, global_step)
-            #     global_step += 1
+            if self.val_every is not None and epoch < 10:
+                self.visualize(val_vis_loader, global_step)
+                global_step += 1
     
             # Validation
             if self.val_every is not None and epoch % self.val_every == 0:
@@ -81,7 +81,7 @@ class Trainer:
                 current_val_loss, current_val_error, current_val_auc  = self.wrapper.val_metrics.compute()["val/loss"], self.wrapper.val_metrics.compute()["val/error"], self.wrapper.val_metrics.compute()["val/auc"]
                 
                 # stopping criteria based on proposed approach in the paper
-                combined_stop_metric = current_val_loss + current_val_error
+                combined_stop_metric = current_val_loss + current_val_error + (1 - current_val_auc)
 
                 if combined_stop_metric < best_value:
                     best_value = combined_stop_metric
@@ -95,7 +95,9 @@ class Trainer:
 
                 # Early stopping condition
                 if no_improvement_count >= patience:
-                    #self.logger.log_AUC(self.misc_save_path, best_auc)
+                    # self.logger.log_AUC(self.misc_save_path, best_auc)
+                    # self.visualize(val_vis_loader, global_step)
+                    # global_step += 1
                     print(f"Early stopping at epoch {epoch} due to no improvement in validation loss for {patience} epochs.")
                     break
                 self.wrapper.val_metrics.reset()
@@ -123,9 +125,18 @@ class Trainer:
                 batch = move_to_device(batch, self.device)
                 self.wrapper.test_step(batch)
             computed_metrics = self.wrapper.test_metrics.compute()
+            conf_dict = {"TP": 0, "TN": 0, "FP": 0, "FN": 0}
             for name, value in computed_metrics.items():
-                self.logger.log_scalar_test(f"{name}", value)
-                self.logger.log_AUC(self.misc_save_path, value, name.split("/")[-1])
+                if name.split("/")[-1] not in ['TP', 'FP', 'TN', 'FN', 'false_positives', 'false_negatives']:
+                    self.logger.log_scalar_test(f"{name}", value)
+                    self.logger.log_AUC(self.misc_save_path, value, name.split("/")[-1])
+                elif name.split("/")[-1] in ['TP', 'FP', 'TN', 'FN']:
+                    conf_dict[name.split("/")[-1]] = value
+                elif name.split("/")[-1] in ['false_positives', 'false_negatives']:
+                    self.logger.log_names(self.misc_save_path, value, name.split("/")[-1])
+                    
+            confusion_matrix(**conf_dict, misc_save_path=self.misc_save_path, set="test")
+                    
         self.logger.finish()
     
 
@@ -179,9 +190,14 @@ class Trainer:
                 self.wrapper.validation_step(batch)
             global_step += 1
             computed_metrics = self.wrapper.val_metrics.compute()
+            conf_dict = {"TP": 0, "TN": 0, "FP": 0, "FN": 0}
             for name, value in computed_metrics.items():
-                self.logger.log_scalar(f"{name}", value, global_step)
-        
+                if name.split("/")[-1] not in ['TP', 'FP', 'TN', 'FN']:
+                    self.logger.log_scalar(f"{name}", value, global_step)
+                else:
+                    conf_dict[name.split("/")[-1]] = value
+            confusion_matrix(**conf_dict, misc_save_path=self.misc_save_path, set="val")
+
         return global_step
 
     def _save_model(self, ckpt_name: str):
@@ -206,29 +222,34 @@ class Trainer:
         global_step: int,
     ):
         self.model.eval()
-        with th.no_grad():
-            loader = tqdm(
-                val_loader,
-                bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}",
-                colour="blue",
-                leave=False,
-            )
-            loader.set_description(f"Visualization")
-            # visualize random batch so that it is not always the same
-            #random_visualize_idx = 0 #random.randint(0, 20)
-            micro_counter = 0
-            macro_counter = 0
-
-            for batch_idx, batch in enumerate(loader):
-                batch = move_to_device(batch, self.device)
-                if batch[2].item() == 1 and micro_counter < 2: # micro classes
-                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
-                    micro_counter += 1
-                elif batch[2].item() == 2 and macro_counter < 2: # macro classes
-                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
-                    macro_counter += 1
-                if micro_counter == 2 and macro_counter == 2:
-                    break
+        # with th.no_grad():
+        loader = tqdm(
+            val_loader,
+            bar_format="{l_bar}{bar:10}{r_bar}{bar:-10b}",
+            colour="blue",
+            leave=False,
+        )
+        loader.set_description(f"Visualization")
+        micro_counter = 0
+        macro_counter = 0
+        for batch_idx, batch in enumerate(loader):
+            batch = move_to_device(batch, self.device)
+            if batch[2].item() == 1: # micro and macro classes
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test_MICRO')
+            elif batch[2].item() == 2: # micro and macro classes
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test_MACRO')
+            elif batch[2].item() == 0:
+                    self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test_NORMAL')
+            # if batch[2].item() == 1 and micro_counter < 2: # micro classes
+            #     self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
+            #     micro_counter += 1
+            # elif batch[2].item() == 2 and macro_counter < 2: # macro classes
+            #     self.wrapper.visualize_step(self.model, batch, self.misc_save_path, global_step, 'train')
+            #     macro_counter += 1
+            # if micro_counter == 2 and macro_counter == 2:
+            #     break
+            # if batch_idx >= 0:
+            #     break
                     
     
     def test_visualize(
@@ -247,7 +268,7 @@ class Trainer:
 
             for batch_idx, batch in enumerate(loader):
                 batch = move_to_device(batch, self.device)
-                if batch[2].item() == 1: # micro classes
+                if batch[2].item() == 1 or batch[2].item() == 2: # micro and macro classes
                     self.wrapper.visualize_step(self.model, batch, self.misc_save_path, batch_idx, 'test')
                 
             

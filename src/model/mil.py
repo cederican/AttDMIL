@@ -183,9 +183,9 @@ if __name__ == "__main__":
             #print(f"Dict: {dict}")
 
             # test histo vis
-            visualize_histo_att(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
-            visualize_histo_patches(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
-            visualize_histo_gt(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
+            #visualize_histo_att(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
+            #visualize_histo_patches(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
+            #visualize_histo_gt(model, (features, label, cls, dict), "/home/pml06/dev/attdmil/logs/histo/misc")
             
             features = features.squeeze(0)
             label = label            
